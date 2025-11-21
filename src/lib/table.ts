@@ -7,6 +7,7 @@ type QueryInput = string[] | Record<string, string | number | boolean>;
 
 export class LazyTable {
   private databaseId: string;
+  private databaseName: string;
   private schema: TableSchema;
   private databases: TablesDB;
   private syncer: AppwriteSync;
@@ -26,9 +27,11 @@ export class LazyTable {
     databases: TablesDB,
     syncer: AppwriteSync,
     databaseId: string,
+    databaseName: string,
     schema: TableSchema
   ) {
     this.databaseId = databaseId;
+    this.databaseName = databaseName;
     this.databases = databases;
     this.syncer = syncer;
     this.schema = schema;
@@ -47,7 +50,11 @@ export class LazyTable {
     if (LazyTable.verifiedTables.has(key)) return;
 
     try {
-      await this.syncer.syncTable(this.databaseId, this.schema);
+      await this.syncer.syncTable(
+        this.databaseId,
+        this.databaseName,
+        this.schema
+      );
       LazyTable.verifiedTables.add(key);
     } catch (error) {
       console.error(`Lazy Appwrite: Failed to sync table ${this.schema.name}`);

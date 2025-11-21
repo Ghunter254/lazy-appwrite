@@ -6,17 +6,53 @@ import { table } from "console";
 export class AppwriteSync {
   private databases: TablesDB;
 
+  private verifiedDatabases: Set<string> = new Set();
+
   constructor(client: Client) {
     this.databases = new TablesDB(client);
+  }
+  /**
+   * Checks if database exists. if 404, creates it.
+   */
+
+  async syncDatabase(databaseId: string, databaseName: string): Promise<void> {
+    if (this.verifiedDatabases.has(databaseId)) return;
+
+    try {
+      await this.databases.get({
+        databaseId: databaseId,
+      });
+      this.verifiedDatabases.add(databaseId);
+    } catch (error: any) {
+      if (error.code === 404) {
+        console.log(`Database [${databaseId}] not found. Creating...`);
+        try {
+          await this.databases.create({
+            databaseId: databaseId,
+            name: databaseName,
+          });
+          console.log("Database created.");
+        } catch (creationError: any) {
+          console.error("Failed to create database: ", creationError.message);
+          throw creationError;
+        }
+      } else throw error;
+    }
   }
 
   /**
    * The Main Entry Point.
    * Syncs a table schema (create table + create missing columns).
    * * @param databaseId - The ID of the database to put this table in
+   * @param databaseName - The Name of the database in the console
    * @param schema - The definitions from your interface
    */
-  async syncTable(databaseId: string, schema: TableSchema): Promise<void> {
+  async syncTable(
+    databaseId: string,
+    databaseName: string,
+    schema: TableSchema
+  ): Promise<void> {
+    await this.syncDatabase(databaseId, databaseName);
     console.log(`\nStarting Sync for Table: [${schema.name}]`);
 
     // Ensure the table exists . If not we create one.
