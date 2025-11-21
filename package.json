@@ -20,6 +20,14 @@
     "lint": "tsc",
     "test": "vitest"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ghunter254/lazy-appwrite"
+  },
+  "bugs": {
+    "url": "https://github.com/Ghunter254/lazy-appwrite/issues"
+  },
+  "homepage": "https://github.com/Ghunter254/lazy-appwrite#readme",
   "keywords": [
     "appwrite",
     "database",
