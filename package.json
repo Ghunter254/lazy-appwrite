@@ -1,0 +1,42 @@
+{
+  "name": "lazy-appwrite",
+  "version": "0.1.0-alpha.0",
+  "description": "NPM package for lazy setup with node-appwrite",
+  "license": "MIT",
+  "author": "ghost",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc",
+    "test": "vitest"
+  },
+  "keywords": [
+    "appwrite",
+    "database",
+    "schema",
+    "lazy",
+    "sync",
+    "node-appwrite",
+    "orm",
+    "odm"
+  ],
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.12"
+  },
+  "dependencies": {
+    "node-appwrite": "^20.3.0"
+  }
+}

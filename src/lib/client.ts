@@ -1,0 +1,81 @@
+import {
+  Client,
+  TablesDB,
+  Account,
+  Users,
+  Storage,
+  Teams,
+  Functions,
+  Messaging,
+  Avatars,
+} from "node-appwrite";
+
+import {
+  type AppwriteConfig,
+  type AppwriteAdminContext,
+  type AppwriteSessionContext,
+} from "../types/client-types";
+
+export class AppwriteService {
+  /**
+   * Initializes a server-side Admin client with full permissions.
+   * Mind: Never expose the API key to the client-side.
+   * @param config - Contains ProjectId, Endpoint, and REQUIRED api key.
+   */
+
+  public static createAdminClient(
+    config: AppwriteConfig
+  ): AppwriteAdminContext {
+    if (!config.apiKey) {
+      throw new Error(
+        "AppwriteService: Admin Client requires a secret 'apiKey'."
+      );
+    }
+
+    const client = new Client()
+      .setEndpoint(config.endpoint || "https://cloud.appwrite.io/v1")
+      .setProject(config.projectId)
+      .setKey(config.apiKey);
+
+    if (config.selfSigned) {
+      client.setSelfSigned(true);
+    }
+
+    return {
+      client,
+      databases: new TablesDB(client),
+      users: new Users(client),
+      storage: new Storage(client),
+      teams: new Teams(client),
+      messaging: new Messaging(client),
+      functions: new Functions(client),
+      avatars: new Avatars(client),
+    };
+  }
+
+  /**
+   * Initializes a standard client for client-side or SSR use.
+   * Does NOT use an API Key.
+   * * @param config - Contains projectId and endpoint
+   */
+
+  public static createClient(config: AppwriteConfig): AppwriteSessionContext {
+    const client = new Client()
+      .setEndpoint(config.endpoint || "https://cloud.appwrite.io/v1")
+      .setProject(config.projectId);
+
+    if (config.selfSigned) {
+      client.setSelfSigned(true);
+    }
+
+    return {
+      client,
+      account: new Account(client), // The core of Session clients
+      databases: new TablesDB(client),
+      storage: new Storage(client),
+      teams: new Teams(client),
+      functions: new Functions(client),
+      avatars: new Avatars(client),
+    };
+  }
+}
