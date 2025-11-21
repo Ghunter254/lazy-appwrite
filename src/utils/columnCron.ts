@@ -34,8 +34,15 @@ export async function waitForColumn(
       if (column.status === "failed") {
         throw new Error(`Column ${key} failed to create (Status: failed).`);
       }
-    } catch {
-      // Ignore the other errors.
+    } catch (error: any) {
+      // ONLY ignore 404 (Not Found) errors
+      if (error.code === 404) {
+        // This is normal during creation. Data hasn't propagated yet.
+      }
+      // RE-THROW everything else (Auth errors, Rate limits, etc)
+      else {
+        throw error;
+      }
     }
     await sleep(200); // We wait for two seconds before checking again.
     attempts++;

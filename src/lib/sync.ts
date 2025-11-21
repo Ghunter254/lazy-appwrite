@@ -2,10 +2,10 @@ import { Client, TablesDB, ID } from "node-appwrite";
 import { ColumnType, IndexType, onDeleteToRelation } from "../types/enum";
 import { type ColumnSchema, type TableSchema } from "../types/interface";
 import { table } from "console";
+import { waitForColumn } from "../utils/columnCron";
 
 export class AppwriteSync {
   private databases: TablesDB;
-
   private verifiedDatabases: Set<string> = new Set();
 
   constructor(client: Client) {
@@ -101,6 +101,54 @@ export class AppwriteSync {
       }
       console.log(`Creating Column: [${column.key} (${column.type})] ...`);
       await this.createColumn(databaseId, schema.id, column);
+    }
+
+    if (schema.indexes && schema.indexes.length > 0) {
+      console.log(`\nSyncing Indexes...`);
+      const existingList = await this.databases.listIndexes({
+        databaseId: databaseId,
+        tableId: schema.id,
+      });
+      const existingKeys = existingList.indexes.map((idx: any) => idx.key);
+
+      for (const index of schema.indexes) {
+        if (existingKeys.includes(index.key)) continue;
+        console.log(
+          `Waiting for attributes [${index.columns.join(", ")}] to be ready...`
+        );
+
+        try {
+          await Promise.all(
+            index.columns.map((colKey) => {
+              waitForColumn(this.databases, databaseId, schema.id, colKey);
+            })
+          );
+        } catch (error: any) {
+          console.error(`Index skip: Attribute failed to become available.`);
+          continue; // Skip creating this index
+        }
+
+        console.log(`Creating Index: [${index.key}] (${index.type})...`);
+        try {
+          await this.databases.createIndex({
+            databaseId: databaseId,
+            tableId: schema.id,
+            key: index.key,
+            columns: index.columns,
+            type: index.type as any,
+            orders: index.columns.map(() => "ASC"),
+          });
+          console.log(`Index [${index.key}] created.`);
+        } catch (error: any) {
+          // Ignore 409 (Already exists)
+          if (error.code !== 409) {
+            console.error(
+              `Failed to create index ${index.key}:`,
+              error.message
+            );
+          }
+        }
+      }
     }
   }
   private async createColumn(

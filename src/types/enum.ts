@@ -25,6 +25,7 @@ export enum IndexType {
   Key = "key",
   Unique = "unique",
   FullText = "fulltext",
+  Spatial = "spatial",
 }
 
 export enum RelationshipType {
