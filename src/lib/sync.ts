@@ -1,5 +1,5 @@
 import { Client, TablesDB, ID } from "node-appwrite";
-import { ColumnType, IndexType } from "../types/enum";
+import { ColumnType, IndexType, onDeleteToRelation } from "../types/enum";
 import { type ColumnSchema, type TableSchema } from "../types/interface";
 import { table } from "console";
 
@@ -108,108 +108,162 @@ export class AppwriteSync {
     tableId: string,
     column: ColumnSchema
   ) {
-    switch (column.type) {
-      case ColumnType.String:
-        await this.databases.createStringColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          size: column.size,
-          required: column.required,
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
+    try {
+      switch (column.type) {
+        case ColumnType.String:
+          await this.databases.createStringColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            size: column.size,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
 
-      case ColumnType.Integer:
-        await this.databases.createIntegerColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          required: column.required,
-          ...(column.min ? { min: column.min } : {}),
-          ...(column.max ? { max: column.max } : {}),
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
-      case ColumnType.Float:
-        await this.databases.createFloatColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          required: column.required,
-          ...(column.min ? { min: column.min } : {}),
-          ...(column.max ? { max: column.max } : {}),
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
-      case ColumnType.Boolean:
-        await this.databases.createBooleanColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          required: column.required,
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
-      case ColumnType.Email:
-        await this.databases.createEmailColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          required: column.required,
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
-      case ColumnType.Url:
-        await this.databases.createUrlColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          required: column.required,
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
-      case ColumnType.Ip:
-        await this.databases.createIpColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          required: column.required,
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
-      case ColumnType.Datetime:
-        await this.databases.createDatetimeColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          required: column.required,
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
-      case ColumnType.Enum:
-        await this.databases.createEnumColumn({
-          databaseId: databaseId,
-          tableId: tableId,
-          key: column.key,
-          elements: column.elements,
-          required: column.required,
-          ...(column._default ? { _default: column._default } : {}),
-          ...(column.array ? { array: column.array } : {}),
-        });
-        break;
+        case ColumnType.Integer:
+          await this.databases.createIntegerColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column.min ? { min: column.min } : {}),
+            ...(column.max ? { max: column.max } : {}),
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
+        case ColumnType.Float:
+          await this.databases.createFloatColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column.min ? { min: column.min } : {}),
+            ...(column.max ? { max: column.max } : {}),
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
+        case ColumnType.Boolean:
+          await this.databases.createBooleanColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
+        case ColumnType.Email:
+          await this.databases.createEmailColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
+        case ColumnType.Url:
+          await this.databases.createUrlColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
+        case ColumnType.Ip:
+          await this.databases.createIpColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
+        case ColumnType.Datetime:
+          await this.databases.createDatetimeColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
+        case ColumnType.Enum:
+          await this.databases.createEnumColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            elements: column.elements,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+            ...(column.array ? { array: column.array } : {}),
+          });
+          break;
 
-        _default: throw new Error(
-          `Unsupported Column Type: ${(column as any).type}`
+        case ColumnType.Line:
+          await this.databases.createLineColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+          });
+          break;
+
+        case ColumnType.Point:
+          await this.databases.createPointColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+          });
+          break;
+
+        case ColumnType.Polygon:
+          await this.databases.createPolygonColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            key: column.key,
+            required: column.required,
+            ...(column._default ? { _default: column._default } : {}),
+          });
+          break;
+
+        case ColumnType.Relationship:
+          await this.databases.createRelationshipColumn({
+            databaseId: databaseId,
+            tableId: tableId,
+            relatedTableId: column.relatedTableId,
+            type: column.relationType,
+            onDelete: onDeleteToRelation(column.onDelete),
+            ...(column.twoWay ? { twoWay: column.twoWay } : {}),
+            ...(column.key ? { key: column.key } : {}),
+            ...(column.twoWayKey ? { twoWayKey: column.twoWayKey } : {}),
+          });
+          break;
+
+        default:
+          throw new Error(`Unsupported Column Type: ${(column as any).type}`);
+      }
+    } catch (error: any) {
+      //  Safely ignore column already exists (Skipping).
+      if (error.code === 409) {
+        console.log(
+          `      ⚠️ Attribute [${column.key}] already exists (Skipping).`
         );
+        return;
+      }
+      // Re-throw actual errors (like Invalid Config)
+      throw error;
     }
   }
 }

@@ -1,9 +1,10 @@
-import type { ID } from "node-appwrite";
-import { ColumnType, IndexType } from "./enum";
+import { ColumnType, IndexType, onDelete, RelationshipType } from "./enum";
 
 type RequiredRule<T> =
   | { required: true; _default?: never }
   | { required: false; _default?: T | null };
+
+type Coordinate = [number, number];
 
 interface ColumnBase {
   key: string;
@@ -40,6 +41,27 @@ export type EnumColumn = ColumnBase & {
   elements: string[];
 } & RequiredRule<string>;
 
+export type PointColumn = ColumnBase & {
+  type: ColumnType.Point;
+} & RequiredRule<Coordinate>;
+
+export type LineColumn = ColumnBase & {
+  type: ColumnType.Line;
+} & RequiredRule<Coordinate[]>;
+
+export type PolygonColumn = ColumnBase & {
+  type: ColumnType.Polygon;
+} & RequiredRule<Coordinate[][]>;
+
+export type RelationshipColumn = ColumnBase & {
+  type: ColumnType.Relationship;
+  relatedTableId: string;
+  relationType: RelationshipType;
+  twoWay: boolean;
+  twoWayKey?: string;
+  onDelete: onDelete;
+} & RequiredRule<null>;
+
 export type SimpleColumn = ColumnBase & {
   type: ColumnType.Email | ColumnType.Url | ColumnType.Ip | ColumnType.Datetime;
 } & RequiredRule<string>;
@@ -49,7 +71,11 @@ export type ColumnSchema =
   | NumberColumn
   | BooleanColumn
   | EnumColumn
-  | SimpleColumn;
+  | SimpleColumn
+  | PointColumn
+  | PolygonColumn
+  | LineColumn
+  | RelationshipColumn;
 
 export interface IndexSchema {
   key: string;

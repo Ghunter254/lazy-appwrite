@@ -56,8 +56,10 @@ export class LazyTable {
         this.schema
       );
       LazyTable.verifiedTables.add(key);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Lazy Appwrite: Failed to sync table ${this.schema.name}`);
+      console.error(`Reason: ${error.message}`);
+      throw error;
     }
   }
 

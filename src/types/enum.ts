@@ -1,13 +1,24 @@
+import { RelationMutate } from "node-appwrite";
+
 export enum ColumnType {
   String = "string",
   Integer = "integer",
   Float = "float",
   Boolean = "boolean",
+
+  // Specifics.
   Email = "email",
   Url = "url",
   Ip = "ip",
   Datetime = "datetime",
   Enum = "enum",
+
+  // Geometry
+  Point = "point",
+  Polygon = "polygon",
+  Line = "line",
+
+  Relationship = "relationship",
 }
 
 export enum IndexType {
@@ -15,3 +26,26 @@ export enum IndexType {
   Unique = "unique",
   FullText = "fulltext",
 }
+
+export enum RelationshipType {
+  OneToOne = "oneToOne",
+  OneToMany = "oneToMany",
+  ManyToOne = "manyToOne",
+  ManyToMany = "manyToMany",
+}
+
+export enum onDelete {
+  Restrict = "restrict",
+  Cascade = "cascade",
+  SetNull = "setNull",
+}
+export type OnDeleteRelation = RelationMutate;
+
+export const onDeleteToRelation = (v: onDelete): RelationMutate =>
+  v as unknown as RelationMutate;
+
+export const onDeleteValues: RelationMutate[] = [
+  onDeleteToRelation(onDelete.Restrict),
+  onDeleteToRelation(onDelete.Cascade),
+  onDeleteToRelation(onDelete.SetNull),
+];
