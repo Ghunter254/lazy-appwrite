@@ -1,6 +1,5 @@
-Lazy Appwrite (Alpha)
+### Lazy Appwrite (Alpha)
 Stop clicking around the Console. Start coding. A declarative, schema-first SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
-
 Lazy Appwrite allows you to define your Database Schemas in code. When you try to read or write data, the library checks if the Database, Tables, Columns, and Indexes exist. If they don't, it creates them for you instantly.
 
 Alpha Status Warning
@@ -12,7 +11,7 @@ In Progress: Relationship attributes, Permissions, Bucket schemas, Smart Index p
 
 Breaking Changes: API might change slightly before v1.0.
 
-Features
+### Features
 Lazy Infrastructure: Never manually create a table again. Just define it and insert data.
 
 Declarative Schema: Keep your database structure in version control (Git), not in your head.
@@ -23,13 +22,13 @@ Type Safety: Full TypeScript support for your models and schemas.
 
 Smart Syncing: Skips checks if the table was already verified in the current session (High Performance).
 
-Installation
+### Installation
 `npm install lazy-appwrite node-appwrite`
 or
 `yarn add lazy-appwrite node-appwrite`
 
 #
-Quick Start
+### Quick Start
 Create a file (e.g., `schemas.ts`) and define your tables using our strict types.
 
 
@@ -94,19 +93,15 @@ async function find() {
 }
 ```
 
-Roadmap to v1.0
-#
-[1.] Index Polling: Smart waiting for attributes to be 'available' before creating indexes.
-
-[2.] Relationships: Support for One-to-Many and Many-to-Many attribute syncing.
-
-[3.] Storage Helper: `bucket.uploadAndGetUrl(file)` wrapper.
-
-[4.] Auth Helper: Cached `getMe()` and SSR utilities.
-
-[5.] CLI: `npx lazy-appwrite pull` to generate schemas from existing projects.
+### Roadmap to v1.0
+- [ ] Index Polling
+- [ ] Relationships
+- [ ] Storage Helper
+- [ ] Auth Helper
+- [ ] CLI
 
 #
+### Contributers
 We are actively looking for contributors!
 
 - Fork the repo.
@@ -115,5 +110,9 @@ We are actively looking for contributors!
 - Open a Pull Request.
 #
 
-License
+### License
 Distributed under the MIT License. See `LICENSE` for more information.
+
+![npm version](https://img.shields.io/npm/v/lazy-appwrite)
+![license](https://img.shields.io/badge/license-MIT-green)
+![status](https://img.shields.io/badge/status-alpha-orange)
