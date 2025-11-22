@@ -15,10 +15,14 @@ export class LazyTable {
   // A state to track which tables have been verified for current lifecycle.
   private static verifiedTables: Set<string> = new Set();
 
+  // A Map to track in-flight syncs (Pending)
+  // Maps a task to its Promise.
+  private static pendingSyncs: Map<string, Promise<void>> = new Map();
+
   /**
    * Initializes a lazy table model.
    * This class does not verify the table exists until you perform an operation.
-   * * @param databases - The Appwrite Databases instance
+   * @param databases - The Appwrite Databases instance
    * @param syncer - The internal sync utility for lazy creation
    * @param databaseId - The ID of the database the table belongs to
    * @param schema - The JSON schema definition of the table
@@ -41,26 +45,53 @@ export class LazyTable {
    * Internal utility to ensure the table exists in Appwrite.
    * Checks an internal cache first to prevent redundant API calls.
    * If the table is missing, it triggers the creation/sync process.
-   * * @returns Promise<void>
+   * @returns Promise<void>
    * @throws Error if creation fails due to permissions or validation
    */
 
   private async prepare() {
     const key = `${this.databaseId}:${this.schema.id}`;
+
+    // Table already verified to be present.
+    // Return immediately.
     if (LazyTable.verifiedTables.has(key)) return;
 
-    try {
-      await this.syncer.syncTable(
-        this.databaseId,
-        this.databaseName,
-        this.schema
+    // Wait Path.
+    if (LazyTable.pendingSyncs.has(key)) {
+      console.log(
+        `[LazyAppwrite] Queued behind active sync for: ${this.schema.name}`
       );
-      LazyTable.verifiedTables.add(key);
-    } catch (error: any) {
-      console.error(`Lazy Appwrite: Failed to sync table ${this.schema.name}`);
-      console.error(`Reason: ${error.message}`);
-      throw error;
+      try {
+        await LazyTable.pendingSyncs.get(key);
+        return;
+        // Return with nothing if leader still working.
+      } catch (error) {
+        // TODO: Add retry if leader failed.
+        throw error;
+      }
     }
+
+    // Leader path
+    const syncPromise = (async () => {
+      try {
+        await this.syncer.syncTable(
+          this.databaseId,
+          this.databaseName,
+          this.schema
+        );
+        LazyTable.verifiedTables.add(key);
+      } catch (error: any) {
+        console.error(`[LazyAppwrite] Sync Failed for [${this.schema.name}]`);
+        console.error(`Reason: ${error.message}`);
+        throw error;
+      } finally {
+        LazyTable.pendingSyncs.delete(key);
+      }
+    })();
+
+    // Add the promise to set and await it.
+    LazyTable.pendingSyncs.set(key, syncPromise);
+    await syncPromise;
   }
 
   private validateAndClean(data: any, isUpdate = false) {

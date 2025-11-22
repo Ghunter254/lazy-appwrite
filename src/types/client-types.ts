@@ -31,7 +31,7 @@ export interface AppwriteAdminContext {
 
 // Session context.
 export interface AppwriteSessionContext {
-  client: Client;
+  sessionClient: Client;
   account: Account;
   databases: TablesDB;
   storage: Storage;

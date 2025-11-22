@@ -69,7 +69,7 @@ export class AppwriteService {
     }
 
     return {
-      client,
+      sessionClient: client,
       account: new Account(client), // The core of Session clients
       databases: new TablesDB(client),
       storage: new Storage(client),

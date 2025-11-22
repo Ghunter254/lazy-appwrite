@@ -1,7 +1,6 @@
 import { Client, TablesDB, ID } from "node-appwrite";
 import { ColumnType, IndexType, onDeleteToRelation } from "../types/enum";
 import { type ColumnSchema, type TableSchema } from "../types/interface";
-import { table } from "console";
 import { waitForColumn } from "../utils/columnCron";
 
 export class AppwriteSync {
@@ -70,7 +69,7 @@ export class AppwriteSync {
 
         await this.databases.createTable({
           databaseId: databaseId,
-          tableId: schema.id || ID.unique(),
+          tableId: schema.id,
           name: schema.name,
           ...(schema.permissions ? { permissions: schema.permissions } : {}),
           ...(schema.rowSecurity ? { rowSecurity: schema.rowSecurity } : {}),
