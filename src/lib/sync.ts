@@ -1,4 +1,4 @@
-import { Client, TablesDB, ID } from "node-appwrite";
+import { Client, TablesDB, ID, Query } from "node-appwrite";
 import { ColumnType, IndexType, onDeleteToRelation } from "../types/enum";
 import { type ColumnSchema, type TableSchema } from "../types/interface";
 import { waitForColumn } from "../utils/columnCron";
@@ -8,17 +8,51 @@ import { Logger } from "../utils/Logger";
 export class AppwriteSync {
   private databases: TablesDB;
   private logger: Logger;
+
   private verifiedDatabases: Set<string> = new Set();
+  private static isConnectionVerified: Boolean = false;
 
   constructor(client: Client, logger: Logger) {
     this.databases = new TablesDB(client);
     this.logger = logger;
+  }
+
+  private async verifyConnection() {
+    // If already checked, skip.
+    if (AppwriteSync.isConnectionVerified) return;
+
+    this.logger.info("📡 Verifying Appwrite Connection...");
+
+    try {
+      // Run a lightweight operation
+      // Listing databases is fast and requires valid credentials.
+      await this.databases.list({
+        queries: [Query.limit(1)],
+      });
+
+      // Success
+      AppwriteSync.isConnectionVerified = true;
+      this.logger.info("✅ Connection Verified.");
+    } catch (error: any) {
+      // 4. Fail Loudly with clear instructions
+      this.logger.error("[LazyAppwrite] Connection Failed!");
+      this.logger.error(
+        "   Please check your Project ID, API Key, and Endpoint."
+      );
+      this.logger.error(`Raw Error: ${error.message}`);
+
+      // Stop everything. Do not let the script continue.
+      throw new Error(
+        "[LazyAppwrite] Critical: Invalid Credentials or Endpoint."
+      );
+    }
   }
   /**
    * Checks if database exists. if 404, creates it.
    */
 
   async syncDatabase(databaseId: string, databaseName: string): Promise<void> {
+    await this.verifyConnection();
     if (this.verifiedDatabases.has(databaseId)) return;
 
     try {
@@ -123,8 +157,38 @@ export class AppwriteSync {
         tableId: schema.id,
       });
       const existingKeys = existingList.indexes.map((idx: any) => idx.key);
+      const existingMap = new Map(
+        existingList.indexes.map((idx: any) => [idx.key, idx])
+      );
 
       for (const index of schema.indexes) {
+        const remoteIndex = existingMap.get(index.key);
+        if (remoteIndex) {
+          // If it exists, is it healthy?
+          if (
+            remoteIndex.status === "failed" ||
+            remoteIndex.status === "stuck"
+          ) {
+            this.logger.warn(
+              ` Ghost Index found: [${index.key}] is '${remoteIndex.status}'. Cleaning up...`
+            );
+            try {
+              // DELETE the zombie index so we can recreate it
+              await this.databases.deleteIndex({
+                databaseId: databaseId,
+                tableId: schema.id,
+                key: index.key,
+              });
+              this.logger.info(`Ghost Index deleted.`);
+            } catch (e: any) {
+              this.logger.error(`Failed to remove ghost index: ${e.message}`);
+              continue; // Can't fix it, skip.
+            }
+          } else {
+            // It exists and is 'available' or 'processing'. Skip it.
+            continue;
+          }
+        }
         if (existingKeys.includes(index.key)) continue;
         this.logger.info(
           `Waiting for attributes [${index.columns.join(", ")}] to be ready...`
