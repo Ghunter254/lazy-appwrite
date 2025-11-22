@@ -152,6 +152,86 @@ export class AppwriteSync {
       }
     }
   }
+
+  private async reconcileAttribute(
+    databaseId: string,
+    tableId: string,
+    local: ColumnSchema,
+    remote: any
+  ) {
+    // Checking for type mismatch.
+    if (local.type !== remote.type) {
+      // Relationships are hard to handle.
+      // TODO: Handle relationship mismatch later.
+
+      if (local.type === ColumnType.Relationship) return;
+
+      // Otherwise let's throw an error.
+      throw new Error(
+        `[LazyAppwrite] Schema Conflict in '${tableId}': \n` +
+          `Column '${local.key}' is defined as '${local.type}' but DB has '${remote.type}'. \n` +
+          `Action Required: Manually delete the column in Appwrite or update your Schema.`
+      );
+    }
+
+    // Next we check for array mismatch.
+    const localArray = local.array || false;
+    const remoteArray = remote.array || false;
+
+    if (localArray !== remoteArray) {
+      throw new Error(
+        `[LazyAppwrite] Schema Conflict in '${tableId}': \n` +
+          `Column '${local.key}' Array status mismatch. Local: ${localArray}, Remote: ${remoteArray}.`
+      );
+    }
+
+    // Lastly we fix that which can be fixed.
+    if (local.type === ColumnType.String && remote.type === "string") {
+      // If local size is bigger than remote, we need to expand it.
+      if (local.size > remote.size) {
+        console.log(
+          `Expanding Column [${local.key}] size from ${remote.size} to ${local.size}...`
+        );
+        await this.databases.updateStringColumn({
+          databaseId: databaseId,
+          tableId: tableId,
+          key: local.key,
+          required: local.required,
+          size: local.size,
+        });
+      }
+    }
+    if (local.type === ColumnType.Enum && remote.type === "enum") {
+      // Check if local has elements that remote does not
+      const remoteElements: string[] = remote.elements;
+      const newElements = local.elements.filter(
+        (e) => !remoteElements.includes(e)
+      );
+
+      if (newElements.length > 0) {
+        console.log(
+          `Adding Enum Options to [${local.key}]: ${newElements.join(", ")}`
+        );
+        // Appwrite requires sending the FULL list (Old + New)
+        const finalElements = [...remoteElements, ...newElements];
+        await this.databases.updateEnumColumn({
+          databaseId: databaseId,
+          tableId: tableId,
+          key: local.key,
+          elements: finalElements,
+          required: local.required,
+        });
+      }
+    }
+  }
+
+  /**
+   *
+   * @param databaseId
+   * @param tableId
+   * @param column
+   * @returns Promise<Void>
+   */
   private async createColumn(
     databaseId: string,
     tableId: string,

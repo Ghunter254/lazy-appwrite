@@ -106,8 +106,45 @@ export class LazyTable {
 
     // Now we loop through the Schema Columns to build the clean project.
     for (const column of this.schema.columns) {
-      const value = data[column.key];
+      let value = data[column.key];
 
+      // Array coercion.
+      if (value !== undefined && column.array && !Array.isArray(value)) {
+        console.warn(
+          `[LazyAppwrite] Auto-casting '${column.key}' from Scalar to Array.`
+        );
+        value = [value];
+      }
+      // Number -> String Coercion.
+      if (
+        value !== undefined &&
+        column.type === "string" &&
+        typeof value !== "string"
+      ) {
+        if (typeof value === "number" || typeof value === "boolean") {
+          value = String(value);
+        }
+      }
+      // String -> Number Coercion.
+      if (value !== undefined && typeof value === "string") {
+        if (column.type === "integer") {
+          const number = Number(value);
+          if (!isNaN(number)) {
+            value = number;
+          }
+        }
+      }
+
+      // Boolean String Coercion
+      if (
+        value !== undefined &&
+        column.type === "boolean" &&
+        typeof value === "string"
+      ) {
+        const lower = value.toLowerCase();
+        if (lower === "true") value = true;
+        if (lower === "false") value = false;
+      }
       // If value is provided.
       if (value !== undefined) {
         cleanData[column.key] = value;
