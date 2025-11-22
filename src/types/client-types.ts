@@ -9,18 +9,20 @@ import {
   Messaging,
   Avatars,
 } from "node-appwrite";
+import type { LazyDatabase } from "../lib/database";
 
 export interface AppwriteConfig {
   endpoint?: string;
   projectId: string;
   apiKey?: string;
   selfSigned?: boolean;
+  verbose?: boolean;
 }
 
 // Admin context.
 export interface AppwriteAdminContext {
   client: Client;
-  databases: TablesDB;
+  getDatabase: (databaseId: string, databaseName: string) => LazyDatabase;
   users: Users;
   storage: Storage;
   teams: Teams;
@@ -33,7 +35,7 @@ export interface AppwriteAdminContext {
 export interface AppwriteSessionContext {
   sessionClient: Client;
   account: Account;
-  databases: TablesDB;
+  getDatabase: (databaseId: string, databaseName: string) => LazyDatabase;
   storage: Storage;
   teams: Teams;
   functions: Functions;

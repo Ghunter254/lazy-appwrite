@@ -3,13 +3,16 @@ import { ColumnType, IndexType, onDeleteToRelation } from "../types/enum";
 import { type ColumnSchema, type TableSchema } from "../types/interface";
 import { waitForColumn } from "../utils/columnCron";
 import { withRetry } from "../utils/withRetry";
+import { Logger } from "../utils/Logger";
 
 export class AppwriteSync {
   private databases: TablesDB;
+  private logger: Logger;
   private verifiedDatabases: Set<string> = new Set();
 
-  constructor(client: Client) {
+  constructor(client: Client, logger: Logger) {
     this.databases = new TablesDB(client);
+    this.logger = logger;
   }
   /**
    * Checks if database exists. if 404, creates it.
@@ -25,15 +28,18 @@ export class AppwriteSync {
       this.verifiedDatabases.add(databaseId);
     } catch (error: any) {
       if (error.code === 404) {
-        console.log(`Database [${databaseId}] not found. Creating...`);
+        this.logger.info(`Database [${databaseId}] not found. Creating...`);
         try {
           await this.databases.create({
             databaseId: databaseId,
             name: databaseName,
           });
-          console.log("Database created.");
+          this.logger.info("Database created.");
         } catch (creationError: any) {
-          console.error("Failed to create database: ", creationError.message);
+          this.logger.error(
+            "Failed to create database: ",
+            creationError.message
+          );
           throw creationError;
         }
       } else throw error;
@@ -53,7 +59,7 @@ export class AppwriteSync {
     schema: TableSchema
   ): Promise<void> {
     await this.syncDatabase(databaseId, databaseName);
-    console.log(`\nStarting Sync for Table: [${schema.name}]`);
+    this.logger.info(`\nStarting Sync for Table: [${schema.name}]`);
 
     // Ensure the table exists . If not we create one.
     try {
@@ -62,11 +68,11 @@ export class AppwriteSync {
           databaseId: databaseId,
           tableId: schema.id,
         });
-        console.log(`Table matches ID: ${schema.id}`);
+        this.logger.info(`Table matches ID: ${schema.id}`);
       }
     } catch (error: any) {
       if (error.code === 404) {
-        console.log(`Table not found. Creating "${schema.name}" ...`);
+        this.logger.info(`Table not found. Creating "${schema.name}" ...`);
 
         await this.databases.createTable({
           databaseId: databaseId,
@@ -77,7 +83,7 @@ export class AppwriteSync {
           ...(schema.enabled ? { enabled: schema.enabled } : {}),
         });
 
-        console.log("Table Created.");
+        this.logger.info("Table Created.");
       } else throw error;
     }
     // If Table already existed,
@@ -98,7 +104,9 @@ export class AppwriteSync {
       const remote = remoteColumns.get(column.key);
 
       if (!remote) {
-        console.log(`Creating Column: [${column.key} (${column.type})] ...`);
+        this.logger.info(
+          `Creating Column: [${column.key} (${column.type})] ...`
+        );
         await this.createColumn(databaseId, schema.id, column);
         await new Promise((r) => setTimeout(r, 100)); // With a buffer.
         continue;
@@ -109,7 +117,7 @@ export class AppwriteSync {
     }
 
     if (schema.indexes && schema.indexes.length > 0) {
-      console.log(`\nSyncing Indexes...`);
+      this.logger.info(`\nSyncing Indexes...`);
       const existingList = await this.databases.listIndexes({
         databaseId: databaseId,
         tableId: schema.id,
@@ -118,7 +126,7 @@ export class AppwriteSync {
 
       for (const index of schema.indexes) {
         if (existingKeys.includes(index.key)) continue;
-        console.log(
+        this.logger.info(
           `Waiting for attributes [${index.columns.join(", ")}] to be ready...`
         );
 
@@ -129,11 +137,13 @@ export class AppwriteSync {
             })
           );
         } catch (error: any) {
-          console.error(`Index skip: Attribute failed to become available.`);
+          this.logger.error(
+            `Index skip: Attribute failed to become available.`
+          );
           continue; // Skip creating this index
         }
 
-        console.log(`Creating Index: [${index.key}] (${index.type})...`);
+        this.logger.info(`Creating Index: [${index.key}] (${index.type})...`);
         const createIndex = async () => {
           await this.databases.createIndex({
             databaseId: databaseId,
@@ -145,14 +155,14 @@ export class AppwriteSync {
             //   ? {}
             //   : { orders: index.columns.map(() => "ASC") }),
           });
-          console.log(`Index [${index.key}] created.`);
+          this.logger.info(`Index [${index.key}] created.`);
         };
         try {
           await withRetry(createIndex);
         } catch (error: any) {
           // Ignore 409 (Already exists)
           if (error.code !== 409) {
-            console.error(
+            this.logger.error(
               `Failed to create index ${index.key}:`,
               error.message
             );
@@ -198,7 +208,7 @@ export class AppwriteSync {
     if (local.type === ColumnType.String && remote.type === "string") {
       // If local size is bigger than remote, we need to expand it.
       if (local.size > remote.size) {
-        console.log(
+        this.logger.info(
           `Expanding Column [${local.key}] size from ${remote.size} to ${local.size}...`
         );
         await this.databases.updateStringColumn({
@@ -218,7 +228,7 @@ export class AppwriteSync {
       );
 
       if (newElements.length > 0) {
-        console.log(
+        this.logger.info(
           `Adding Enum Options to [${local.key}]: ${newElements.join(", ")}`
         );
         // Appwrite requires sending the FULL list (Old + New)
@@ -388,7 +398,9 @@ export class AppwriteSync {
     } catch (error: any) {
       //  Safely ignore column already exists (Skipping).
       if (error.code === 409) {
-        console.log(`Attribute [${column.key}] already exists (Skipping).`);
+        this.logger.info(
+          `Attribute [${column.key}] already exists (Skipping).`
+        );
         return;
       }
       // Re-throw actual errors (like Invalid Config)

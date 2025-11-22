@@ -2,6 +2,7 @@ import { TablesDB, ID, Query, Models } from "node-appwrite";
 import { AppwriteSync } from "./sync";
 import { type TableSchema } from "../types/interface";
 import { withRetry } from "../utils/withRetry";
+import { Logger } from "../utils/Logger";
 
 // Helper type to allow users write better queries.
 type QueryInput = string[] | Record<string, string | number | boolean>;
@@ -12,6 +13,7 @@ export class LazyTable {
   private schema: TableSchema;
   private databases: TablesDB;
   private syncer: AppwriteSync;
+  private logger: Logger;
 
   // A state to track which tables have been verified for current lifecycle.
   private static verifiedTables: Set<string> = new Set();
@@ -33,13 +35,15 @@ export class LazyTable {
     syncer: AppwriteSync,
     databaseId: string,
     databaseName: string,
-    schema: TableSchema
+    schema: TableSchema,
+    logger: Logger
   ) {
     this.databaseId = databaseId;
     this.databaseName = databaseName;
     this.databases = databases;
     this.syncer = syncer;
     this.schema = schema;
+    this.logger = logger;
   }
 
   /**
@@ -59,7 +63,7 @@ export class LazyTable {
 
     // Wait Path.
     if (LazyTable.pendingSyncs.has(key)) {
-      console.log(
+      this.logger.info(
         `[LazyAppwrite] Queued behind active sync for: ${this.schema.name}`
       );
       try {
@@ -82,8 +86,10 @@ export class LazyTable {
         );
         LazyTable.verifiedTables.add(key);
       } catch (error: any) {
-        console.error(`[LazyAppwrite] Sync Failed for [${this.schema.name}]`);
-        console.error(`Reason: ${error.message}`);
+        this.logger.error(
+          `[LazyAppwrite] Sync Failed for [${this.schema.name}]`
+        );
+        this.logger.error(`Reason: ${error.message}`);
         throw error;
       } finally {
         LazyTable.pendingSyncs.delete(key);
@@ -111,7 +117,7 @@ export class LazyTable {
 
       // Array coercion.
       if (value !== undefined && column.array && !Array.isArray(value)) {
-        console.warn(
+        this.logger.warn(
           `[LazyAppwrite] Auto-casting '${column.key}' from Scalar to Array.`
         );
         value = [value];
@@ -166,7 +172,7 @@ export class LazyTable {
 
     // Warn user on ghost fields.
     if (extraKeys.length > 0) {
-      console.warn(
+      this.logger.warn(
         `[LazyAppwrite] Warning: Ignoring unknown fields in
         '${this.schema.name}' : `,
         extraKeys.join(", ")
