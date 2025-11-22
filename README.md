@@ -1,4 +1,5 @@
-### Lazy Appwrite (Alpha)
+### Lazy Appwrite (Alpha 0.2.0)
+
 Stop clicking around the Console. Start coding. A declarative, schema-first SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
 Lazy Appwrite allows you to define your Database Schemas in code. When you try to read or write data, the library checks if the Database, Tables, Columns, and Indexes exist. If they don't, it creates them for you instantly.
 
@@ -7,11 +8,16 @@ This library is currently in Alpha.
 
 Works: Database/Collection creation, Attribute syncing (String, Int, Bool), Basic CRUD, Object-syntax queries.
 
-In Progress: Relationship attributes, Permissions, Bucket schemas, Smart Index polling.
+Advanced: Relationship attributes, Geo-Spatial, and Indexes.
 
-Breaking Changes: API might change slightly before v1.0.
+Hygiene: Automatic data validation and improved error handling (Always room for more improvement.)
+
+In Progress: Schema Permissions, Storage Helpers, Auth Helpers.
+
+Breaking Changes: API might change greatly before v1.0.
 
 ### Features
+
 Lazy Infrastructure: Never manually create a table again. Just define it and insert data.
 
 Declarative Schema: Keep your database structure in version control (Git), not in your head.
@@ -23,14 +29,16 @@ Type Safety: Full TypeScript support for your models and schemas.
 Smart Syncing: Skips checks if the table was already verified in the current session (High Performance).
 
 ### Installation
+
 `npm install lazy-appwrite node-appwrite`
 or
 `yarn add lazy-appwrite node-appwrite`
 
 #
-### Quick Start
-Create a file (e.g., `schemas.ts`) and define your tables using our strict types.
 
+### Quick Start
+
+Create a file (e.g., `schemas.ts`) and define your tables using our strict types.
 
 ```ts
 import { TableSchema, ColumnType } from "lazy-appwrite";
@@ -40,34 +48,57 @@ export const UserSchema: TableSchema = {
   columns: [
     { key: "username", type: ColumnType.String, size: 50, required: true },
     { key: "age", type: ColumnType.Integer, required: false, _default: null },
-    { key: "is_active", type: ColumnType.Boolean, required: true, _default: true }
+    {
+      key: "is_active",
+      type: ColumnType.Boolean,
+      required: true,
+      _default: true,
+    },
+    {
+      key: "location",
+      type: ColumnType.Point,
+      required: true,
+    },
   ],
-  indexes: []
+  indexes: [
+    {
+      key: "idx_username",
+      type: IndexType.Unique,
+      columns: ["username"],
+    },
+    {
+      key: "idx_location",
+      type: IndexType.Spatial, // Spatial index usually requires specific handling, standard Key for now
+      columns: ["location"],
+    },
+  ],
 };
 ```
 
 Initialize the Client
 Connect to Appwrite using the Service Factory. This gives you access to specific Databases.
-``` ts
+
+```ts
 import { LazyDatabase, AppwriteService } from "lazy-appwrite";
 import { UserSchema } from "./schemas";
 
 // 1. Connect (Admin Client)
-const {client} = AppwriteService.createAdminClient({
+const { client } = AppwriteService.createAdminClient({
   projectId: "YOUR_PROJECT_ID",
   endpoint: "https://cloud.appwrite.io/v1",
-  apiKey: "YOUR_SECRET_KEY"
+  apiKey: "YOUR_SECRET_KEY",
 });
 
 // 2. Initialize a Database Wrapper
 const DATABASE_ID = "your-db-id";
-const db = new LazyDatabase(client, DATABASE_ID);
+const db = new LazyDatabase(client, DATABASE_ID, "your-db-name");
 
 // 3. Create your Model
 export const Users = db.model(UserSchema);
 ```
 
 Now you can write code as if the database already exists.
+
 ```ts
 import { Users } from "./config";
 
@@ -77,7 +108,7 @@ async function register() {
   const newUser = await Users.create({
     username: "LazyDev",
     age: 25,
-    is_active: true
+    is_active: true,
   });
 
   console.log("Created:", newUser.$id);
@@ -85,32 +116,70 @@ async function register() {
 
 async function find() {
   // Clean Object Syntax for queries
-  const activeUsers = await Users.list({ 
-    is_active: true 
+  const activeUsers = await Users.list({
+    is_active: true,
   });
-  
+
   console.log(activeUsers);
 }
 ```
 
+Advanced Schemas: We now support complex types like relationships and Geo-location.
+
+```ts
+import {
+  TableSchema,
+  ColumnType,
+  RelationType,
+  onDelete,
+  IndexType,
+} from "lazy-appwrite";
+
+export const PostSchema: TableSchema = {
+  id: "posts",
+  name: "Posts",
+  columns: [
+    { key: "title", type: ColumnType.String, size: 255, required: true },
+
+    // Geo Point (Longitude, Latitude)
+    { key: "location", type: ColumnType.Point, required: false },
+
+    // Relationship (Many Posts -> One User)
+    {
+      key: "author",
+      type: ColumnType.Relationship,
+      relatedTableId: "users", // Must match UserSchema.id
+      relationType: RelationType.ManyToOne,
+      twoWay: true,
+      twoWayKey: "posts",
+      onDelete: onDelete.SetNull,
+    },
+  ],
+  indexes: [{ key: "idx_title", type: IndexType.Unique, columns: ["title"] }],
+};
+```
+
 ### Roadmap to v1.0
-- [ ] Index Polling
-- [ ] Relationships
+
 - [ ] Storage Helper
 - [ ] Auth Helper
 - [ ] CLI
 
 #
+
 ### Contributers
+
 We are actively looking for contributors!
 
 - Fork the repo.
 - Create a feature branch (`git checkout -b feature/amazing-feature`).
 - Commit your changes.
 - Open a Pull Request.
+
 #
 
 ### License
+
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ![npm version](https://img.shields.io/npm/v/lazy-appwrite)
