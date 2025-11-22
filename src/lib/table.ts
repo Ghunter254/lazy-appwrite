@@ -1,6 +1,7 @@
 import { TablesDB, ID, Query, Models } from "node-appwrite";
 import { AppwriteSync } from "./sync";
 import { type TableSchema } from "../types/interface";
+import { withRetry } from "../utils/withRetry";
 
 // Helper type to allow users write better queries.
 type QueryInput = string[] | Record<string, string | number | boolean>;
@@ -194,12 +195,14 @@ export class LazyTable {
     const validData = this.validateAndClean(data, false);
     await this.prepare();
     try {
-      return await this.databases.createRow({
-        databaseId: this.databaseId,
-        tableId: this.schema.id,
-        rowId: id,
-        data: validData,
-      });
+      return await withRetry(() =>
+        this.databases.createRow({
+          databaseId: this.databaseId,
+          tableId: this.schema.id,
+          rowId: id,
+          data: validData,
+        })
+      );
     } catch (error: any) {
       if (error.code === 409) {
         throw new Error(
@@ -299,12 +302,14 @@ export class LazyTable {
     await this.prepare();
 
     try {
-      return this.databases.updateRow({
-        databaseId: this.databaseId,
-        tableId: this.schema.id,
-        rowId: id,
-        data: validData,
-      });
+      return await withRetry(() =>
+        this.databases.updateRow({
+          databaseId: this.databaseId,
+          tableId: this.schema.id,
+          rowId: id,
+          data: validData,
+        })
+      );
     } catch (error: any) {
       if (error.code === 404) {
         throw new Error(

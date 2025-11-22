@@ -2,6 +2,7 @@ import { Client, TablesDB, ID } from "node-appwrite";
 import { ColumnType, IndexType, onDeleteToRelation } from "../types/enum";
 import { type ColumnSchema, type TableSchema } from "../types/interface";
 import { waitForColumn } from "../utils/columnCron";
+import { withRetry } from "../utils/withRetry";
 
 export class AppwriteSync {
   private databases: TablesDB;
@@ -88,18 +89,23 @@ export class AppwriteSync {
       tableId: schema.id,
     });
 
-    const existingKeys = existingList.columns.map((column) => column.key);
+    const remoteColumns = new Map(
+      existingList.columns.map((column: any) => [column.key, column])
+    );
 
     // Loop through the schema and create Missing ones.
     for (const column of schema.columns) {
-      if (existingKeys.includes(column.key)) {
-        console.log(
-          `Reproducing skipped: Column [${column.key} already exists.]`
-        );
+      const remote = remoteColumns.get(column.key);
+
+      if (!remote) {
+        console.log(`Creating Column: [${column.key} (${column.type})] ...`);
+        await this.createColumn(databaseId, schema.id, column);
+        await new Promise((r) => setTimeout(r, 100)); // With a buffer.
         continue;
       }
-      console.log(`Creating Column: [${column.key} (${column.type})] ...`);
-      await this.createColumn(databaseId, schema.id, column);
+
+      // If it exists we reconcile.
+      await this.reconcileAttribute(databaseId, schema.id, column, remote);
     }
 
     if (schema.indexes && schema.indexes.length > 0) {
@@ -128,18 +134,21 @@ export class AppwriteSync {
         }
 
         console.log(`Creating Index: [${index.key}] (${index.type})...`);
-        try {
+        const createIndex = async () => {
           await this.databases.createIndex({
             databaseId: databaseId,
             tableId: schema.id,
             key: index.key,
             columns: index.columns,
             type: index.type as any,
-            ...(index.type === IndexType.Spatial
-              ? {}
-              : { orders: index.columns.map(() => "ASC") }),
+            // ...(index.type === IndexType.Spatial
+            //   ? {}
+            //   : { orders: index.columns.map(() => "ASC") }),
           });
           console.log(`Index [${index.key}] created.`);
+        };
+        try {
+          await withRetry(createIndex);
         } catch (error: any) {
           // Ignore 409 (Already exists)
           if (error.code !== 409) {
@@ -237,10 +246,10 @@ export class AppwriteSync {
     tableId: string,
     column: ColumnSchema
   ) {
-    try {
+    const createOperation = async () => {
       switch (column.type) {
         case ColumnType.String:
-          await this.databases.createStringColumn({
+          return await this.databases.createStringColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -249,10 +258,9 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
 
         case ColumnType.Integer:
-          await this.databases.createIntegerColumn({
+          return await this.databases.createIntegerColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -262,9 +270,8 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
         case ColumnType.Float:
-          await this.databases.createFloatColumn({
+          return await this.databases.createFloatColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -274,9 +281,8 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
         case ColumnType.Boolean:
-          await this.databases.createBooleanColumn({
+          return await this.databases.createBooleanColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -284,9 +290,8 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
         case ColumnType.Email:
-          await this.databases.createEmailColumn({
+          return await this.databases.createEmailColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -294,9 +299,8 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
         case ColumnType.Url:
-          await this.databases.createUrlColumn({
+          return await this.databases.createUrlColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -304,9 +308,9 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
+
         case ColumnType.Ip:
-          await this.databases.createIpColumn({
+          return await this.databases.createIpColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -314,9 +318,9 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
+
         case ColumnType.Datetime:
-          await this.databases.createDatetimeColumn({
+          return await this.databases.createDatetimeColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -324,9 +328,9 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
+
         case ColumnType.Enum:
-          await this.databases.createEnumColumn({
+          return await this.databases.createEnumColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
@@ -335,40 +339,36 @@ export class AppwriteSync {
             ...(column._default ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
-          break;
 
         case ColumnType.Line:
-          await this.databases.createLineColumn({
+          return await this.databases.createLineColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
             required: column.required,
             ...(column._default ? { _default: column._default } : {}),
           });
-          break;
 
         case ColumnType.Point:
-          await this.databases.createPointColumn({
+          return await this.databases.createPointColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
             required: column.required,
             ...(column._default ? { _default: column._default } : {}),
           });
-          break;
 
         case ColumnType.Polygon:
-          await this.databases.createPolygonColumn({
+          return await this.databases.createPolygonColumn({
             databaseId: databaseId,
             tableId: tableId,
             key: column.key,
             required: column.required,
             ...(column._default ? { _default: column._default } : {}),
           });
-          break;
 
         case ColumnType.Relationship:
-          await this.databases.createRelationshipColumn({
+          return await this.databases.createRelationshipColumn({
             databaseId: databaseId,
             tableId: tableId,
             relatedTableId: column.relatedTableId,
@@ -378,17 +378,17 @@ export class AppwriteSync {
             ...(column.key ? { key: column.key } : {}),
             ...(column.twoWayKey ? { twoWayKey: column.twoWayKey } : {}),
           });
-          break;
 
         default:
           throw new Error(`Unsupported Column Type: ${(column as any).type}`);
       }
+    };
+    try {
+      await withRetry(createOperation); // Handles crashes due to rate limiting.
     } catch (error: any) {
       //  Safely ignore column already exists (Skipping).
       if (error.code === 409) {
-        console.log(
-          `      ⚠️ Attribute [${column.key}] already exists (Skipping).`
-        );
+        console.log(`Attribute [${column.key}] already exists (Skipping).`);
         return;
       }
       // Re-throw actual errors (like Invalid Config)
