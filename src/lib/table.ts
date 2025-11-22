@@ -63,6 +63,58 @@ export class LazyTable {
     }
   }
 
+  private validateAndClean(data: any, isUpdate = false) {
+    const cleanData: any = {};
+    const schemaKeys = this.schema.columns.map((column) => {
+      return column.key;
+    });
+    const missingRequired: string[] = [];
+    const extraKeys = Object.keys(data).filter(
+      (key) => !schemaKeys.includes(key)
+    );
+
+    // Now we loop through the Schema Columns to build the clean project.
+    for (const column of this.schema.columns) {
+      const value = data[column.key];
+
+      // If value is provided.
+      if (value !== undefined) {
+        cleanData[column.key] = value;
+        continue;
+      }
+
+      // If this is an UPDATE missing keys are fine.
+      // If its CREATE we need to check if its required.
+
+      if (!isUpdate) {
+        if (column.required) {
+          missingRequired.push(column.key);
+        } else if (column._default !== undefined && column._default !== null) {
+          cleanData[column.key] = column._default;
+        }
+      }
+    }
+
+    // Warn user on ghost fields.
+    if (extraKeys.length > 0) {
+      console.warn(
+        `[LazyAppwrite] Warning: Ignoring unknown fields in
+        '${this.schema.name}' : `,
+        extraKeys.join(", ")
+      );
+    }
+
+    if (missingRequired.length > 0) {
+      throw new Error(
+        `[LazyAppwrite] Validation Failed in '${
+          this.schema.name
+        }'. Missing required fields: ${missingRequired.join(", ")}`
+      );
+    }
+
+    return cleanData;
+  }
+
   /**
    * Creates a new row in the table.
    * If the table does not exist, it will be created automatically based on the Schema.
@@ -71,13 +123,24 @@ export class LazyTable {
    * @returns Promise<Models.Row> The created row object
    */
   async create(data: any, id: string = ID.unique()) {
+    const validData = this.validateAndClean(data, false);
     await this.prepare();
-    return this.databases.createRow({
-      databaseId: this.databaseId,
-      tableId: this.schema.id,
-      rowId: id,
-      data: data,
-    });
+    try {
+      return await this.databases.createRow({
+        databaseId: this.databaseId,
+        tableId: this.schema.id,
+        rowId: id,
+        data: validData,
+      });
+    } catch (error: any) {
+      if (error.code === 409) {
+        throw new Error(
+          `[LazyAppwrite] Duplicate Error in '${this.schema.name}': ` +
+            `A document with ID '${id}' or a Unique Attribute already exists.`
+        );
+      }
+      throw error;
+    }
   }
 
   /**
@@ -164,13 +227,24 @@ export class LazyTable {
    * @returns Promise<Models.DefaultRow> The updated row
    */
   async update(id: string, data: any) {
+    const validData = this.validateAndClean(data, true);
     await this.prepare();
-    return this.databases.updateRow({
-      databaseId: this.databaseId,
-      tableId: this.schema.id,
-      rowId: id,
-      data: data,
-    });
+
+    try {
+      return this.databases.updateRow({
+        databaseId: this.databaseId,
+        tableId: this.schema.id,
+        rowId: id,
+        data: validData,
+      });
+    } catch (error: any) {
+      if (error.code === 404) {
+        throw new Error(
+          `[LazyAppwrite] Not Found: Could not update document '${id}' in '${this.schema.name}' because it does not exist.`
+        );
+      }
+      throw error;
+    }
   }
 
   /**

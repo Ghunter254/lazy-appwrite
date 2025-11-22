@@ -136,7 +136,9 @@ export class AppwriteSync {
             key: index.key,
             columns: index.columns,
             type: index.type as any,
-            orders: index.columns.map(() => "ASC"),
+            ...(index.type === IndexType.Spatial
+              ? {}
+              : { orders: index.columns.map(() => "ASC") }),
           });
           console.log(`Index [${index.key}] created.`);
         } catch (error: any) {
