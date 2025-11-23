@@ -1,4 +1,4 @@
-### Lazy Appwrite (Alpha 0.2.0)
+### Lazy Appwrite (Alpha 0.3.0)
 
 Stop clicking around the Console. Start coding. A declarative, schema-first SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
 Lazy Appwrite allows you to define your Database Schemas in code. When you try to read or write data, the library checks if the Database, Tables, Columns, and Indexes exist. If they don't, it creates them for you instantly.
@@ -10,7 +10,11 @@ Works: Database/Collection creation, Attribute syncing (String, Int, Bool), Basi
 
 Advanced: Relationship attributes, Geo-Spatial, and Indexes.
 
+Self-Healing: Detects Schema Drift (String size expansion, Enum additions) and Ghost Indexes.
+
 Hygiene: Automatic data validation and improved error handling (Always room for more improvement.)
+
+Robust: Handles Race Conditions (Cold Starts), Rate Limiting (Exponential Backoff), and Data Hygiene.
 
 In Progress: Schema Permissions, Storage Helpers, Auth Helpers.
 
@@ -27,6 +31,14 @@ Mongo-like Syntax: Users.list({ active: true }) instead of verbose Query builder
 Type Safety: Full TypeScript support for your models and schemas.
 
 Smart Syncing: Skips checks if the table was already verified in the current session (High Performance).
+
+Race Condition Proof: Safe to use in Serverless environments. Parallel requests wait for the leader to finish syncing the schema.
+
+Drift Detection: If you change size: 50 to size: 100 in your code, the library automatically updates the live database.
+
+Smart Casting: Safely converts strings ("25", "true") to Integers/Booleans before sending to Appwrite.
+
+Typed Errors: Catch specific errors like LazyErrorType.VALIDATION or LazyErrorType.APPWRITE.
 
 ### Installation
 
@@ -83,7 +95,7 @@ import { LazyDatabase, AppwriteService } from "lazy-appwrite";
 import { UserSchema } from "./schemas";
 
 // 1. Connect (Admin Client)
-const { client } = AppwriteService.createAdminClient({
+const app = AppwriteService.createAdminClient({
   projectId: "YOUR_PROJECT_ID",
   endpoint: "https://cloud.appwrite.io/v1",
   apiKey: "YOUR_SECRET_KEY",
@@ -91,7 +103,7 @@ const { client } = AppwriteService.createAdminClient({
 
 // 2. Initialize a Database Wrapper
 const DATABASE_ID = "your-db-id";
-const db = new LazyDatabase(client, DATABASE_ID, "your-db-name");
+const db = app.getDatabase(DATABASE_ID, "your-db-name");
 
 // 3. Create your Model
 export const Users = db.model(UserSchema);
