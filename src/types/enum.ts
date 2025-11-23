@@ -35,11 +35,20 @@ export enum RelationshipType {
   ManyToMany = "manyToMany",
 }
 
+export enum LazyErrorType {
+  VALIDATION = "VALIDATION",
+  APPWRITE = "APPWRITE",
+  TIMEOUT = "TIMEOUT",
+  CONFIG = "CONFIG",
+  ABORT = "ABORT",
+}
+
 export enum onDelete {
   Restrict = "restrict",
   Cascade = "cascade",
   SetNull = "setNull",
 }
+
 export type OnDeleteRelation = RelationMutate;
 
 export const onDeleteToRelation = (v: onDelete): RelationMutate =>

@@ -1,8 +1,9 @@
 import { TablesDB, ID, Query, Models } from "node-appwrite";
-import { AppwriteSync } from "./sync";
+import { LazySync } from "./sync";
 import { type TableSchema } from "../types/interface";
 import { withRetry } from "../utils/withRetry";
 import { Logger } from "../utils/Logger";
+import { LazyError } from "../handlers/error";
 
 // Helper type to allow users write better queries.
 type QueryInput = string[] | Record<string, string | number | boolean>;
@@ -12,7 +13,7 @@ export class LazyTable {
   private databaseName: string;
   private schema: TableSchema;
   private databases: TablesDB;
-  private syncer: AppwriteSync;
+  private syncer: LazySync;
   private logger: Logger;
 
   // A state to track which tables have been verified for current lifecycle.
@@ -32,7 +33,7 @@ export class LazyTable {
    */
   constructor(
     databases: TablesDB,
-    syncer: AppwriteSync,
+    syncer: LazySync,
     databaseId: string,
     databaseName: string,
     schema: TableSchema,
@@ -180,8 +181,8 @@ export class LazyTable {
     }
 
     if (missingRequired.length > 0) {
-      throw new Error(
-        `[LazyAppwrite] Validation Failed in '${
+      throw LazyError.validation(
+        `Validation Failed in '${
           this.schema.name
         }'. Missing required fields: ${missingRequired.join(", ")}`
       );
@@ -211,12 +212,13 @@ export class LazyTable {
       );
     } catch (error: any) {
       if (error.code === 409) {
-        throw new Error(
-          `[LazyAppwrite] Duplicate Error in '${this.schema.name}': ` +
-            `A document with ID '${id}' or a Unique Attribute already exists.`
+        throw LazyError.appwrite(
+          `Duplicate Error in '${this.schema.name}': ` +
+            `A document with ID '${id}' or a Unique Attribute already exists.`,
+          error
         );
       }
-      throw error;
+      throw LazyError.appwrite(error.message, error);
     }
   }
 
@@ -264,7 +266,7 @@ export class LazyTable {
         await this.prepare();
         return { rows: [], total: 0 };
       }
-      throw error;
+      throw LazyError.appwrite(error.message, error);
     }
   }
 
@@ -318,11 +320,11 @@ export class LazyTable {
       );
     } catch (error: any) {
       if (error.code === 404) {
-        throw new Error(
-          `[LazyAppwrite] Not Found: Could not update document '${id}' in '${this.schema.name}' because it does not exist.`
+        throw LazyError.appwrite(
+          `Not Found: Could not update document '${id}' in '${this.schema.name}' because it does not exist.`
         );
       }
-      throw error;
+      throw LazyError.appwrite(error.message, error);
     }
   }
 

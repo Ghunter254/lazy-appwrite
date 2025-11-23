@@ -1,6 +1,5 @@
 import {
   Client,
-  TablesDB,
   Account,
   Users,
   Storage,
@@ -17,6 +16,7 @@ import {
 } from "../types/client-types";
 import { Logger } from "../utils/Logger";
 import { LazyDatabase } from "./database";
+import { LazyError } from "../handlers/error";
 
 export class AppwriteService {
   /**
@@ -30,33 +30,38 @@ export class AppwriteService {
     config: AppwriteConfig
   ): AppwriteAdminContext {
     if (!config.apiKey) {
-      throw new Error(
-        "AppwriteService: Admin Client requires a secret 'apiKey'."
+      throw LazyError.config("Admin Client requires a secret 'apiKey'.");
+    }
+
+    try {
+      const verbose = config.verbose === true;
+      const logger = new Logger(verbose);
+      const client = new Client()
+        .setEndpoint(config.endpoint || "https://cloud.appwrite.io/v1")
+        .setProject(config.projectId)
+        .setKey(config.apiKey);
+
+      if (config.selfSigned) {
+        client.setSelfSigned(true);
+      }
+
+      return {
+        client,
+        getDatabase: (databaseId: string, databaseName: string) =>
+          new LazyDatabase(client, databaseId, databaseName, logger),
+        users: new Users(client),
+        storage: new Storage(client),
+        teams: new Teams(client),
+        messaging: new Messaging(client),
+        functions: new Functions(client),
+        avatars: new Avatars(client),
+      };
+    } catch (error: any) {
+      throw LazyError.config(
+        `An error occured when setting up admin client. Check if all credentials are included`,
+        error
       );
     }
-
-    const verbose = config.verbose === true;
-    const logger = new Logger(verbose);
-    const client = new Client()
-      .setEndpoint(config.endpoint || "https://cloud.appwrite.io/v1")
-      .setProject(config.projectId)
-      .setKey(config.apiKey);
-
-    if (config.selfSigned) {
-      client.setSelfSigned(true);
-    }
-
-    return {
-      client,
-      getDatabase: (databaseId: string, databaseName: string) =>
-        new LazyDatabase(client, databaseId, databaseName, logger),
-      users: new Users(client),
-      storage: new Storage(client),
-      teams: new Teams(client),
-      messaging: new Messaging(client),
-      functions: new Functions(client),
-      avatars: new Avatars(client),
-    };
   }
 
   /**
@@ -66,25 +71,32 @@ export class AppwriteService {
    */
 
   public static createClient(config: AppwriteConfig): AppwriteSessionContext {
-    const client = new Client()
-      .setEndpoint(config.endpoint || "https://cloud.appwrite.io/v1")
-      .setProject(config.projectId);
+    try {
+      const client = new Client()
+        .setEndpoint(config.endpoint || "https://cloud.appwrite.io/v1")
+        .setProject(config.projectId);
 
-    if (config.selfSigned) {
-      client.setSelfSigned(true);
+      if (config.selfSigned) {
+        client.setSelfSigned(true);
+      }
+      const verbose = config.verbose === true;
+      const logger = new Logger(verbose);
+
+      return {
+        sessionClient: client,
+        account: new Account(client), // The core of Session clients
+        storage: new Storage(client),
+        teams: new Teams(client),
+        functions: new Functions(client),
+        avatars: new Avatars(client),
+        getDatabase: (databaseId: string, databaseName: string) =>
+          new LazyDatabase(client, databaseId, databaseName, logger),
+      };
+    } catch (error: any) {
+      throw LazyError.config(
+        `An error occured when setting up session client. Check if all credentials are included`,
+        error
+      );
     }
-    const verbose = config.verbose === true;
-    const logger = new Logger(verbose);
-
-    return {
-      sessionClient: client,
-      account: new Account(client), // The core of Session clients
-      storage: new Storage(client),
-      teams: new Teams(client),
-      functions: new Functions(client),
-      avatars: new Avatars(client),
-      getDatabase: (databaseId: string, databaseName: string) =>
-        new LazyDatabase(client, databaseId, databaseName, logger),
-    };
   }
 }

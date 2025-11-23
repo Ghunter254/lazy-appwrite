@@ -1,12 +1,12 @@
 import { Client, TablesDB } from "node-appwrite";
-import { AppwriteSync } from "./sync";
+import { LazySync } from "./sync";
 import { LazyTable } from "./table";
 import { type TableSchema } from "../types/interface";
 import { Logger } from "../utils/Logger";
 
 export class LazyDatabase {
   private databases: TablesDB;
-  private syncer: AppwriteSync;
+  private syncer: LazySync;
   private dbId: string;
   private dbName: string;
   private logger: Logger;
@@ -21,7 +21,7 @@ export class LazyDatabase {
     this.dbId = databaseId;
     this.dbName = databaseName;
     this.logger = logger;
-    this.syncer = new AppwriteSync(client, logger);
+    this.syncer = new LazySync(client, logger);
   }
 
   /**

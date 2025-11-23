@@ -1,4 +1,5 @@
 import { TablesDB } from "node-appwrite";
+import { LazyError } from "../handlers/error";
 
 export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -41,11 +42,11 @@ export async function waitForColumn(
       }
       // RE-THROW everything else (Auth errors, Rate limits, etc)
       else {
-        throw error;
+        throw LazyError.appwrite("Appwrite Error", error);
       }
     }
     await sleep(200); // We wait for two seconds before checking again.
     attempts++;
   }
-  throw new Error(`Timeout: Column ${key} stuck in processing.`);
+  throw LazyError.timeout(`Timeout: Column ${key} stuck in processing.`);
 }

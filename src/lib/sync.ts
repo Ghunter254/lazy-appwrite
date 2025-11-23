@@ -1,11 +1,12 @@
 import { Client, TablesDB, ID, Query } from "node-appwrite";
-import { ColumnType, IndexType, onDeleteToRelation } from "../types/enum";
+import { ColumnType, onDeleteToRelation } from "../types/enum";
 import { type ColumnSchema, type TableSchema } from "../types/interface";
 import { waitForColumn } from "../utils/columnCron";
 import { withRetry } from "../utils/withRetry";
 import { Logger } from "../utils/Logger";
+import { LazyError } from "../handlers/error";
 
-export class AppwriteSync {
+export class LazySync {
   private databases: TablesDB;
   private logger: Logger;
 
@@ -19,7 +20,7 @@ export class AppwriteSync {
 
   private async verifyConnection() {
     // If already checked, skip.
-    if (AppwriteSync.isConnectionVerified) return;
+    if (LazySync.isConnectionVerified) return;
 
     this.logger.info("📡 Verifying Appwrite Connection...");
 
@@ -31,7 +32,7 @@ export class AppwriteSync {
       });
 
       // Success
-      AppwriteSync.isConnectionVerified = true;
+      LazySync.isConnectionVerified = true;
       this.logger.info("✅ Connection Verified.");
     } catch (error: any) {
       // 4. Fail Loudly with clear instructions
@@ -42,8 +43,9 @@ export class AppwriteSync {
       this.logger.error(`Raw Error: ${error.message}`);
 
       // Stop everything. Do not let the script continue.
-      throw new Error(
-        "[LazyAppwrite] Critical: Invalid Credentials or Endpoint."
+      throw LazyError.appwrite(
+        "Critical: Invalid Config Credentials or Endpoint.",
+        error
       );
     }
   }
@@ -74,14 +76,13 @@ export class AppwriteSync {
             "Failed to create database: ",
             creationError.message
           );
-          throw creationError;
+          throw LazyError.appwrite("Failed to create database", creationError);
         }
       } else throw error;
     }
   }
 
   /**
-   * The Main Entry Point.
    * Syncs a table schema (create table + create missing columns).
    * * @param databaseId - The ID of the database to put this table in
    * @param databaseName - The Name of the database in the console
@@ -118,7 +119,7 @@ export class AppwriteSync {
         });
 
         this.logger.info("Table Created.");
-      } else throw error;
+      } else throw LazyError.appwrite("Failed to create table", error);
     }
     // If Table already existed,
     // We fetch existing columns to prevent duplicates.
@@ -250,7 +251,7 @@ export class AppwriteSync {
       if (local.type === ColumnType.Relationship) return;
 
       // Otherwise let's throw an error.
-      throw new Error(
+      throw LazyError.validation(
         `[LazyAppwrite] Schema Conflict in '${tableId}': \n` +
           `Column '${local.key}' is defined as '${local.type}' but DB has '${remote.type}'. \n` +
           `Action Required: Manually delete the column in Appwrite or update your Schema.`
