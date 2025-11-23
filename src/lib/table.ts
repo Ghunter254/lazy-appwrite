@@ -214,7 +214,7 @@ export class LazyTable {
       if (error.code === 409) {
         throw LazyError.appwrite(
           `Duplicate Error in '${this.schema.name}': ` +
-            `A document with ID '${id}' or a Unique Attribute already exists.`,
+            `A row with ID '${id}' or a Unique Attribute already exists.`,
           error
         );
       }
@@ -321,7 +321,7 @@ export class LazyTable {
     } catch (error: any) {
       if (error.code === 404) {
         throw LazyError.appwrite(
-          `Not Found: Could not update document '${id}' in '${this.schema.name}' because it does not exist.`
+          `Not Found: Could not update row '${id}' in '${this.schema.name}' because it does not exist.`
         );
       }
       throw LazyError.appwrite(error.message, error);
