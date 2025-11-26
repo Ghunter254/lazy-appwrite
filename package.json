@@ -1,6 +1,6 @@
 {
   "name": "lazy-appwrite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "NPM package for lazy setup with node-appwrite",
   "license": "MIT",
   "author": "ghost",
