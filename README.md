@@ -1,4 +1,4 @@
-### Lazy Appwrite (Alpha 0.3.0)
+### Lazy Appwrite (Alpha)
 
 Stop clicking around the Console. Start coding. A declarative, schema-first SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
 Lazy Appwrite allows you to define your Database Schemas in code. When you try to read or write data, the library checks if the Database, Tables, Columns, and Indexes exist. If they don't, it creates them for you instantly.
@@ -195,5 +195,6 @@ We are actively looking for contributors!
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ![npm version](https://img.shields.io/npm/v/lazy-appwrite)
+[![Changelog](https://img.shields.io/badge/Changelog-Click%20Here-blue)](./CHANGELOG.md)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![status](https://img.shields.io/badge/status-alpha-orange)
