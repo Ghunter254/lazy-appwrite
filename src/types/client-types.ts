@@ -8,6 +8,7 @@ import {
   Functions,
   Messaging,
   Avatars,
+  Models,
 } from "node-appwrite";
 import type { LazyDatabase } from "../lib/database";
 
@@ -40,4 +41,10 @@ export interface AppwriteSessionContext {
   teams: Teams;
   functions: Functions;
   avatars: Avatars;
+}
+
+export interface AuthContext {
+  user: Models.User<Models.Preferences> | null;
+  sessionToken: string | null;
+  isAuthenticated: boolean;
 }

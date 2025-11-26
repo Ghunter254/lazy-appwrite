@@ -1,8 +1,8 @@
 import { TablesDB, ID, Query, Models } from "node-appwrite";
 import { LazySync } from "./sync";
 import { type TableSchema } from "../types/interface";
-import { withRetry } from "../utils/withRetry";
-import { Logger } from "../utils/Logger";
+import { withRetry } from "../common/withRetry";
+import { Logger } from "../common/Logger";
 import { LazyError } from "../handlers/error";
 
 // Helper type to allow users write better queries.

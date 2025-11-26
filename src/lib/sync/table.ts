@@ -1,7 +1,7 @@
 import { TablesDB } from "node-appwrite";
-import { Logger } from "../../utils/Logger";
+import { Logger } from "../../common/Logger";
 import type { TableSchema } from "../../types/interface";
-import { withRetry } from "../../utils/withRetry";
+import { withRetry } from "../../common/withRetry";
 import { LazyError } from "../../handlers/error";
 
 export class TableManager {

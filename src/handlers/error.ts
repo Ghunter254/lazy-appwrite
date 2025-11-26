@@ -19,8 +19,8 @@ export class LazyError extends Error {
     return new LazyError(LazyErrorType.TIMEOUT, message);
   }
 
-  static abort(message: string) {
-    return new LazyError(LazyErrorType.ABORT, message);
+  static abort(message: string, originalError?: any) {
+    return new LazyError(LazyErrorType.ABORT, message, originalError);
   }
 
   static appwrite(message: string, originalError?: any) {

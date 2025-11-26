@@ -1,9 +1,9 @@
 import { TablesDB } from "node-appwrite";
-import { Logger } from "../../utils/Logger";
+import { Logger } from "../../common/Logger";
 import type { ColumnSchema } from "../../types/interface";
 import { ColumnType, onDeleteToRelation } from "../../types/enum";
 import { LazyError } from "../../handlers/error";
-import { withRetry } from "../../utils/withRetry";
+import { withRetry } from "../../common/withRetry";
 
 export class ColumnManager {
   constructor(private databases: TablesDB, private logger: Logger) {}

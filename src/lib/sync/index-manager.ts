@@ -1,9 +1,9 @@
 import type { TablesDB } from "node-appwrite";
-import type { Logger } from "../../utils/Logger";
+import type { Logger } from "../../common/Logger";
 import type { IndexSchema } from "../../types/interface";
 import { IndexType } from "../../types/enum";
-import { waitForColumn } from "../../utils/columnCron";
-import { withRetry } from "../../utils/withRetry";
+import { waitForColumn } from "../../common/columnCron";
+import { withRetry } from "../../common/withRetry";
 
 export class IndexManager {
   constructor(private databases: TablesDB, private logger: Logger) {}

@@ -1,5 +1,5 @@
 import { Client, TablesDB } from "node-appwrite";
-import { Logger } from "../../utils/Logger";
+import { Logger } from "../../common/Logger";
 import { type TableSchema } from "../../types/interface";
 import { DatabaseManager } from "./database";
 import { TableManager } from "./table";

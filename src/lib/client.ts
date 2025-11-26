@@ -14,7 +14,7 @@ import {
   type AppwriteAdminContext,
   type AppwriteSessionContext,
 } from "../types/client-types";
-import { Logger } from "../utils/Logger";
+import { Logger } from "../common/Logger";
 import { LazyDatabase } from "./database";
 import { LazyError } from "../handlers/error";
 

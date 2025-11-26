@@ -1,5 +1,5 @@
 import { TablesDB, Query } from "node-appwrite";
-import { Logger } from "../../utils/Logger";
+import { Logger } from "../../common/Logger";
 import { LazyError } from "../../handlers/error";
 
 export class DatabaseManager {

@@ -1,7 +1,7 @@
 import { Client, TablesDB } from "node-appwrite";
 import { LazyTable } from "./table";
 import { type TableSchema } from "../types/interface";
-import { Logger } from "../utils/Logger";
+import { Logger } from "../common/Logger";
 import { LazySync } from "./sync";
 
 export class LazyDatabase {
