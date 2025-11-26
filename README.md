@@ -1,3 +1,8 @@
+![npm version](https://img.shields.io/npm/v/lazy-appwrite)
+[![Changelog](https://img.shields.io/badge/Changelog-Click%20Here-blue)](./CHANGELOG.md)
+![license](https://img.shields.io/badge/license-MIT-green)
+![status](https://img.shields.io/badge/status-alpha-orange)
+
 ### Lazy Appwrite (Alpha)
 
 Stop clicking around the Console. Start coding. A declarative, schema-first SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
@@ -194,7 +199,4 @@ We are actively looking for contributors!
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-![npm version](https://img.shields.io/npm/v/lazy-appwrite)
-[![Changelog](https://img.shields.io/badge/Changelog-Click%20Here-blue)](./CHANGELOG.md)
-![license](https://img.shields.io/badge/license-MIT-green)
-![status](https://img.shields.io/badge/status-alpha-orange)
+
