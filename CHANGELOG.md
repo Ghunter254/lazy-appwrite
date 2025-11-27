@@ -5,6 +5,22 @@ All notable changes to the "Lazy Appwrite" project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-11-27
+
+### Breaking Changes
+
+- **Split Auth Utilities:** Separated `AuthUtils` into two distinct namespaces to improve security and clarity.
+  - `utils.auth.*`: Now contains **only** Client-side session methods (`login`, `register`, `getMe`).
+  - `utils.users.*`: Now contains **only** Server-side Admin methods (`getOrCreate`, `delete`, `update`).
+  - _Migration:_ Move `utils.auth.getOrCreateUser` calls to `utils.users.getOrCreate`.
+
+### Added
+
+- **Master User Update:** Added `utils.users.update(id, options)` to handle multiple updates (Name, Email, Block Status, Labels, Verification) in a single parallelized function call.
+- **Label Merging:** The update method supports a `mergeLabels: true` option to append labels instead of overwriting them.
+- **Avatar Support:** Added `utils.auth.getAvatarUrl()` to generate user initials/icons.
+- **Verification Helpers:** Added `utils.users.verifyManually()` to skip email loops.
+
 ## [0.4.0] - 2025-11-26
 
 ### Added

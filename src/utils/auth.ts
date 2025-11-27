@@ -13,107 +13,13 @@ import type { AuthContext } from "../types/client-types";
 
 export class AuthUtilities {
   constructor(
-    private users: Users,
     private account: Account,
-    private endPoint: string,
     private logger: Logger,
+    private endPoint: string,
     private projectId: string
   ) {}
 
   /**
-   *
-   * @param email Finds one user with the email param.
-   * @returns The user object or null.
-   * Doesnt throw a 404
-   */
-  async findByEmail(
-    email: string
-  ): Promise<Models.User<Models.Preferences> | null> {
-    try {
-      const result = await withRetry(() =>
-        this.users.list({
-          queries: [Query.equal("email", email), Query.limit(1)],
-        })
-      );
-      const user = result.users[0];
-      return user ? (user as Models.User<Models.Preferences>) : null;
-    } catch (error) {
-      throw LazyError.appwrite("Failed to fetch user", error);
-    }
-  }
-  /**
-   * Uses Users SDK for admin tasks.
-   * @param email
-   * @param password optional (Needed only for user creation)
-   * @param name optional (Needed only for user creation)
-   * @returns user object and true if user exists.
-   * Creates a user object if doesnt exist.
-   * @throws type validation if no password. type appwrite if process fails.
-   */
-
-  async getOrCreateUser(
-    email: string,
-    password?: string,
-    name?: string
-  ): Promise<{ user: Models.User<Models.Preferences>; created: boolean }> {
-    this.logger.info(`[Auth] Checking if user exists: ${email}`);
-    const user = await this.findByEmail(email);
-
-    if (user) {
-      return { user: user, created: false };
-    }
-
-    if (!password) {
-      throw LazyError.validation("Password is needed to create user account.");
-    }
-    try {
-      const newUser = await withRetry(() =>
-        this.users.create({
-          userId: ID.unique(),
-          email: email,
-          ...(password ? { password: password } : {}),
-          ...(name ? { name: name } : {}),
-        })
-      );
-      this.logger.info(`[Auth] User created: ${newUser.$id}`);
-      return {
-        user: newUser as Models.User<Models.Preferences>,
-        created: true,
-      };
-    } catch (error: any) {
-      if (error.code === 409) {
-        // Handle race between creation and check
-        const retrySearch = await this.findByEmail(email);
-        if (retrySearch) return { user: retrySearch, created: false };
-        throw LazyError.appwrite(
-          "User exists (409) but could not be found.",
-          error
-        );
-      }
-      throw LazyError.appwrite("Could not find or create user.", error);
-    }
-  }
-
-  /**
-   * Uses Users SDK.
-   * @param userId Id of the user to delete.
-   * @returns a boolean.
-   * @throws type appwrite if process fails.
-   */
-
-  async deleteUser(userId: string): Promise<boolean> {
-    try {
-      await withRetry(() => this.users.delete({ userId: userId }));
-      this.logger.info(`[Auth] User deleted: ${userId}`);
-      return true;
-    } catch (error: any) {
-      if (error.code === 404) return false;
-      throw LazyError.appwrite("Failed to delete user", error);
-    }
-  }
-
-  /**
-   * Uses Account SDK
    * @param email
    * @param password
    * @param name optional.
@@ -147,7 +53,7 @@ export class AuthUtilities {
   }
 
   /**
-   * Uses Account SDK
+   *
    * @param email
    * @param password
    * @returns an appwrite session.
@@ -206,7 +112,7 @@ export class AuthUtilities {
   }
 
   /**
-   * Uses Account SDK
+   *
    * @returns current authenticated user.
    */
   async getMe(

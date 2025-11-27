@@ -1,9 +1,11 @@
 import { Account, Users, type Client } from "node-appwrite";
 import { AuthUtilities } from "./auth";
 import type { Logger } from "../common/Logger";
+import { UsersUtilities } from "./users";
 
 export class LazyUtils {
   public auth: AuthUtilities;
+  public users: UsersUtilities;
   private projectId: string;
   private endPoint: string;
 
@@ -15,11 +17,12 @@ export class LazyUtils {
     const users = new Users(client);
 
     this.auth = new AuthUtilities(
-      users,
       account,
-      this.endPoint,
       logger,
+      this.endPoint,
       this.projectId
     );
+
+    this.users = new UsersUtilities(users, logger);
   }
 }

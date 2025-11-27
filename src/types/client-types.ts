@@ -48,3 +48,22 @@ export interface AuthContext {
   sessionToken: string | null;
   isAuthenticated: boolean;
 }
+
+export interface UpdateUserOptions {
+  name?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+
+  // Status logic
+  blocked?: boolean; // Maps to updateStatus(false)
+  emailVerified?: boolean; // Maps to updateEmailVerification
+  phoneVerified?: boolean; // Maps to updatePhoneVerification
+
+  // Label logic
+  labels?: string[];
+  mergeLabels?: boolean; // If true, appends to existing. If false, overwrites.
+
+  // Preferences
+  prefs?: Record<string, any>;
+}
