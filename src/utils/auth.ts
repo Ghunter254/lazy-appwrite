@@ -209,9 +209,19 @@ export class AuthUtilities {
    * Uses Account SDK
    * @returns current authenticated user.
    */
-  async getMe(): Promise<Models.User<Models.Preferences> | null> {
+  async getMe(
+    session: string
+  ): Promise<Models.User<Models.Preferences> | null> {
     try {
-      return await this.account.get();
+      const scopedClient = new Client()
+        .setEndpoint(this.endPoint)
+        .setProject(this.projectId)
+        .setSession(session);
+
+      const sessionAccount = new Account(scopedClient);
+      const user = await sessionAccount.get();
+
+      return user;
     } catch (error: any) {
       // 401 means Not Logged In. Return null (safe).
       if (error.code === 401) return null;
@@ -219,15 +229,22 @@ export class AuthUtilities {
     }
   }
 
-  async isLoggedIn(): Promise<boolean> {
-    const user = await this.getMe();
+  async isLoggedIn(session: string): Promise<boolean> {
+    const user = await this.getMe(session);
     return !!user;
   }
 
-  async logout(session?: string) {
-    return await this.account.deleteSession(
-      session ? { sessionId: session } : { sessionId: "current" }
-    );
+  async logout(session: string) {
+    const scopedClient = new Client()
+      .setEndpoint(this.endPoint)
+      .setProject(this.projectId)
+      .setSession(session);
+
+    const sessionAccount = new Account(scopedClient);
+
+    return await sessionAccount.deleteSession({
+      sessionId: "current",
+    });
   }
 
   /**

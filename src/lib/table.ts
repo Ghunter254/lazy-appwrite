@@ -1,4 +1,4 @@
-import { TablesDB, ID, Query, Models } from "node-appwrite";
+import { TablesDB, ID, Query } from "node-appwrite";
 import { LazySync } from "./sync";
 import { type TableSchema } from "../types/interface";
 import { withRetry } from "../common/withRetry";

@@ -6,6 +6,8 @@ export {
   onDelete,
   LazyErrorType,
 } from "./types/enum";
+
+export { Logger } from "./common/Logger";
 export { LazyError } from "./handlers/error";
 export type { LazyDatabase } from "./lib/database";
 export type { LazyTable } from "./lib/table";
