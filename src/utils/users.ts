@@ -6,6 +6,14 @@ import type { UpdateUserOptions } from "../types/client-types";
 
 export class UsersUtilities {
   constructor(private users: Users, private logger: Logger) {}
+
+  /**
+   * Returns the raw Appwrite 'Users' service (Admin).
+   */
+  get standard(): Users {
+    return this.users;
+  }
+
   /**
    *
    * @param email Finds one user with the email param.

@@ -1,6 +1,6 @@
 import { Account, Users, type Client } from "node-appwrite";
 import { AuthUtilities } from "./auth";
-import type { Logger } from "../common/Logger";
+import { Logger } from "../common/Logger";
 import { UsersUtilities } from "./users";
 
 export class LazyUtils {
@@ -9,7 +9,13 @@ export class LazyUtils {
   private projectId: string;
   private endPoint: string;
 
-  constructor(client: Client, logger: Logger) {
+  private _client: Client;
+
+  constructor(client: Client, logger?: Logger) {
+    const safeLogger = logger || new Logger(false);
+
+    this._client = client;
+
     this.projectId = (client as any).config.project;
     this.endPoint = (client as any).config.endpoint;
 
@@ -18,11 +24,18 @@ export class LazyUtils {
 
     this.auth = new AuthUtilities(
       account,
-      logger,
+      safeLogger,
       this.endPoint,
       this.projectId
     );
 
-    this.users = new UsersUtilities(users, logger);
+    this.users = new UsersUtilities(users, safeLogger);
+  }
+
+  /**
+   * Returns the raw Appwrite Client instance.
+   */
+  get client(): Client {
+    return this._client;
   }
 }

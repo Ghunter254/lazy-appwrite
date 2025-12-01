@@ -25,6 +25,16 @@ export class LazyDatabase {
   }
 
   /**
+   *
+   * Returns the raw Appwrite 'Table' service instance.
+   * Use this if you need to perform operations not yet supported by Lazy Appwrite.
+   * Note: Operations performed here DO NOT trigger lazy syncing or schema validation.
+   */
+  get standard(): TablesDB {
+    return this.databases;
+  }
+
+  /**
    * Binds a Schema to the Database Client.
    * Returns a Model you can use to Create/List/Update.
    */

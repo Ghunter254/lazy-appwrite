@@ -20,6 +20,13 @@ export class AuthUtilities {
   ) {}
 
   /**
+   * Returns the raw Appwrite 'Account' service instance.
+   */
+  get standard(): Account {
+    return this.account;
+  }
+
+  /**
    * @param email
    * @param password
    * @param name optional.

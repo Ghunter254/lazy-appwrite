@@ -48,6 +48,25 @@ export class LazyTable {
   }
 
   /**
+   *
+   * Returns the raw Appwrite 'Databases' service.
+   * You can use this to perform raw operations on this specific table.
+   */
+  get standard(): TablesDB {
+    return this.databases;
+  }
+
+  /**
+   * Helper to get IDs easily if using the escape hatch.
+   */
+  get config() {
+    return {
+      databaseId: this.databaseId,
+      collectionId: this.schema.id,
+    };
+  }
+
+  /**
    * Internal utility to ensure the table exists in Appwrite.
    * Checks an internal cache first to prevent redundant API calls.
    * If the table is missing, it triggers the creation/sync process.
