@@ -1,202 +1,146 @@
-![npm version](https://img.shields.io/npm/v/lazy-appwrite)
+# Lazy Appwrite 🚀
+
+![npm version](https://img.shields.io/npm/v/lazy-appwrite?color=blue)
 [![Changelog](https://img.shields.io/badge/Changelog-Click%20Here-blue)](./CHANGELOG.md)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![status](https://img.shields.io/badge/status-alpha-orange)
 
-### Lazy Appwrite (Alpha)
+**Stop clicking around the Console. Start coding.**
 
-Stop clicking around the Console. Start coding. A declarative, schema-first SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
-Lazy Appwrite allows you to define your Database Schemas in code. When you try to read or write data, the library checks if the Database, Tables, Columns, and Indexes exist. If they don't, it creates them for you instantly.
+A declarative, self-healing SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
 
-Alpha Status Warning
-This library is currently in Alpha.
+---
 
-Works: Database/Collection creation, Attribute syncing (String, Int, Bool), Basic CRUD, Object-syntax queries.
+## 🚧 Alpha Status
 
-Advanced: Relationship attributes, Geo-Spatial, and Indexes.
+This library is currently in **Alpha**.
 
-Self-Healing: Detects Schema Drift (String size expansion, Enum additions) and Ghost Indexes.
+- **Core:** Database/Collection lazy creation, Primitive Attributes.
+- **Advanced:** Relationships, Geo-Spatial, and Indexes.
+- **Self-Healing:** Detects Schema Drift and Ghost Indexes.
+- **Robust:** Handles Race Conditions (Cold Starts), Rate Limiting, and Data Hygiene.
+- **Utilities:** Auth Helpers (Login, Register, SSR Cookies) and User Management (Admin).
+- **In Progress:** Storage Helpers.
 
-Hygiene: Automatic data validation and improved error handling (Always room for more improvement.)
+---
 
-Robust: Handles Race Conditions (Cold Starts), Rate Limiting (Exponential Backoff), and Data Hygiene.
+## Features
 
-In Progress: Schema Permissions, Storage Helpers, Auth Helpers.
+- **Lazy Infrastructure:** Define schema in code; library creates it on the fly.
+- **Race Condition Proof:** Built for Serverless. Mutex locking prevents 409 conflicts.
+- **Drift Detection:** Auto-updates DB when you change code (e.g. expand String size).
+- **Data Hygiene:** Smart casting (String -> Int) and validation before API calls.
+- **Typed Errors:** Catch specific errors like `LazyErrorType.VALIDATION`.
 
-Breaking Changes: API might change greatly before v1.0.
+---
 
-### Features
+## Installation
 
-Lazy Infrastructure: Never manually create a table again. Just define it and insert data.
+```bash
+npm install lazy-appwrite node-appwrite
+```
 
-Declarative Schema: Keep your database structure in version control (Git), not in your head.
+---
 
-Mongo-like Syntax: Users.list({ active: true }) instead of verbose Query builders.
+## Quick Start (The Easy Way)
 
-Type Safety: Full TypeScript support for your models and schemas.
+Run the initialization command to scaffold your configuration and example schemas.
 
-Smart Syncing: Skips checks if the table was already verified in the current session (High Performance).
+```bash
+npx lazy-appwrite init
+```
 
-Race Condition Proof: Safe to use in Serverless environments. Parallel requests wait for the leader to finish syncing the schema.
+**This will create:**
 
-Drift Detection: If you change size: 50 to size: 100 in your code, the library automatically updates the live database.
+- `src/lib/appwrite.ts` (Client setup)
+- `lazy-examples/` (Schema templates)
 
-Smart Casting: Safely converts strings ("25", "true") to Integers/Booleans before sending to Appwrite.
+---
 
-Typed Errors: Catch specific errors like LazyErrorType.VALIDATION or LazyErrorType.APPWRITE.
+## Manual Setup
 
-### Installation
+If you prefer to set it up manually:
 
-`npm install lazy-appwrite node-appwrite`
-or
-`yarn add lazy-appwrite node-appwrite`
+### 1. Define a Schema
 
-#
+```typescript
+import { TableSchema, ColumnType, IndexType } from "lazy-appwrite";
 
-### Quick Start
-
-Create a file (e.g., `schemas.ts`) and define your tables using our strict types.
-
-```ts
-import { TableSchema, ColumnType } from "lazy-appwrite";
 export const UserSchema: TableSchema = {
   id: "users",
   name: "Users",
   columns: [
     { key: "username", type: ColumnType.String, size: 50, required: true },
-    { key: "age", type: ColumnType.Integer, required: false, _default: null },
-    {
-      key: "is_active",
-      type: ColumnType.Boolean,
-      required: true,
-      _default: true,
-    },
-    {
-      key: "location",
-      type: ColumnType.Point,
-      required: true,
-    },
+    { key: "age", type: ColumnType.Integer, required: false, _default: 18 },
   ],
   indexes: [
-    {
-      key: "idx_username",
-      type: IndexType.Unique,
-      columns: ["username"],
-    },
-    {
-      key: "idx_location",
-      type: IndexType.Spatial, // Spatial index usually requires specific handling, standard Key for now
-      columns: ["location"],
-    },
+    { key: "idx_username", type: IndexType.Unique, columns: ["username"] },
   ],
 };
 ```
 
-Initialize the Client
-Connect to Appwrite using the Service Factory. This gives you access to specific Databases.
+### 2. Initialize
 
-```ts
-import { LazyDatabase, AppwriteService } from "lazy-appwrite";
+```typescript
+import { LazyAppwrite } from "lazy-appwrite";
 import { UserSchema } from "./schemas";
 
-// 1. Connect (Admin Client)
-const app = AppwriteService.createAdminClient({
-  projectId: "YOUR_PROJECT_ID",
-  endpoint: "https://cloud.appwrite.io/v1",
-  apiKey: "YOUR_SECRET_KEY",
+const app = LazyAppwrite.createAdminClient({
+  projectId: "...",
+  apiKey: "...",
+  endpoint: "...",
 });
 
-// 2. Initialize a Database Wrapper
-const DATABASE_ID = "your-db-id";
-const db = app.getDatabase(DATABASE_ID, "your-db-name");
-
-// 3. Create your Model
+const db = app.getDatabase("my-db", "Main DB");
 export const Users = db.model(UserSchema);
 ```
 
-Now you can write code as if the database already exists.
+### 3\. Use
 
-```ts
-import { Users } from "./config";
-
-async function register() {
-  // IF 'users' table doesn't exist, it is created automatically here!
-  // IF 'username' column is missing, it is added automatically!
-  const newUser = await Users.create({
-    username: "LazyDev",
-    age: 25,
-    is_active: true,
-  });
-
-  console.log("Created:", newUser.$id);
-}
-
-async function find() {
-  // Clean Object Syntax for queries
-  const activeUsers = await Users.list({
-    is_active: true,
-  });
-
-  console.log(activeUsers);
-}
+```typescript
+await Users.create({
+  username: "LazyDev",
+  age: "25", // Auto-casted to Int
+});
 ```
 
-Advanced Schemas: We now support complex types like relationships and Geo-location.
+---
 
-```ts
-import {
-  TableSchema,
-  ColumnType,
-  RelationType,
-  onDelete,
-  IndexType,
-} from "lazy-appwrite";
+## 🔐 Auth Utilities
 
-export const PostSchema: TableSchema = {
-  id: "posts",
-  name: "Posts",
-  columns: [
-    { key: "title", type: ColumnType.String, size: 255, required: true },
+New in `v0.5.0`: A dedicated subpath for Authentication helpers.
 
-    // Geo Point (Longitude, Latitude)
-    { key: "location", type: ColumnType.Point, required: false },
+```typescript
+import { LazyUtils } from "lazy-appwrite/utils";
 
-    // Relationship (Many Posts -> One User)
-    {
-      key: "author",
-      type: ColumnType.Relationship,
-      relatedTableId: "users", // Must match UserSchema.id
-      relationType: RelationType.ManyToOne,
-      twoWay: true,
-      twoWayKey: "posts",
-      onDelete: onDelete.SetNull,
-    },
-  ],
-  indexes: [{ key: "idx_title", type: IndexType.Unique, columns: ["title"] }],
-};
+// Initialize with your client
+const utils = new LazyUtils(app.client);
+
+// 1. Client-Side (Session)
+// Frictionless onboarding: Tries Login -> Fails? -> Register -> Login
+await utils.auth.loginOrRegister("user@test.com", "pass123");
+
+// 2. Server-Side (Admin)
+// Idempotent creation: Checks if user exists -> Returns it. If not -> Creates it.
+await utils.users.getOrCreate("admin@test.com", "pass123");
 ```
 
-### Roadmap to v1.0
+---
 
-- [ ] Storage Helper
-- [ ] Auth Helper
-- [ ] CLI
+## 🤝 Contributors
 
-#
+We are actively looking for contributors\!
 
-### Contributers
+1.  Fork the repo.
+2.  Create a feature branch.
+3.  Open a Pull Request.
 
-We are actively looking for contributors!
+---
 
-- Fork the repo.
-- Create a feature branch (`git checkout -b feature/amazing-feature`).
-- Commit your changes.
-- Open a Pull Request.
+## 📄 License
 
-#
+Distributed under the MIT License.
 
-### License
+```
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
-
+```
