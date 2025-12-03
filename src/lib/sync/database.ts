@@ -27,7 +27,7 @@ export class DatabaseManager {
     } catch (error: any) {
       if (error.code === 404) {
         // 4. Not Found -> Create
-        this.logger.info(`Database [${databaseId}] not found. Creating...`);
+        // this.logger.info(`Database [${databaseId}] not found. Creating...`); - Might leak database ID when unintended
         try {
           await this.databases.create({
             databaseId: databaseId,
