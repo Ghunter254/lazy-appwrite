@@ -1,4 +1,4 @@
-# Lazy Appwrite 🚀
+# Lazy Appwrite
 
 ![npm version](https://img.shields.io/npm/v/lazy-appwrite?color=blue)
 [![Changelog](https://img.shields.io/badge/Changelog-Click%20Here-blue)](./CHANGELOG.md)
@@ -10,10 +10,6 @@
 A declarative, self-healing SDK for Appwrite that handles database creation, syncing, and typed queries automatically.
 
 ---
-
-## 🚧 Alpha Status
-
-This library is currently in **Alpha**.
 
 - **Core:** Database/Collection lazy creation, Primitive Attributes.
 - **Advanced:** Relationships, Geo-Spatial, and Indexes.

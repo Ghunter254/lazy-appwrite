@@ -77,6 +77,32 @@ export type ColumnSchema =
   | LineColumn
   | RelationshipColumn;
 
+export type AdvancedFilter = {
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | string[]
+    | number[]
+    | {
+        $eq?: string | number | boolean;
+        $ne?: string | number | boolean;
+        $gt?: string | number;
+        $gte?: string | number;
+        $lt?: string | number;
+        $lte?: string | number;
+        $search?: string;
+        $in?: (string | number)[]; // "One of these values"
+        $between?: [string | number, string | number];
+        $startsWith?: string;
+        $endsWith?: string;
+        $isNull?: boolean;
+        $isNotNull?: boolean;
+      };
+};
+
+export type QueryInput = string[] | AdvancedFilter;
+
 export interface IndexSchema {
   key: string;
   type: IndexType;

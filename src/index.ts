@@ -13,7 +13,7 @@ export { LazyError } from "./handlers/error";
 // Types.
 export type { LazyDatabase } from "./lib/database";
 export type { LazyTable } from "./lib/table";
-export type { TableSchema, ColumnSchema } from "./types/interface";
+export type { TableSchema, ColumnSchema, QueryInput } from "./types/interface";
 export type {
   AppwriteConfig,
   AppwriteAdminContext,

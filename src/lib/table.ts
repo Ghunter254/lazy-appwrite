@@ -1,12 +1,10 @@
-import { TablesDB, ID, Query } from "node-appwrite";
+import { TablesDB, ID } from "node-appwrite";
 import { LazySync } from "./sync";
-import { type TableSchema } from "../types/interface";
+import { type QueryInput, type TableSchema } from "../types/interface";
 import { withRetry } from "../common/withRetry";
 import { Logger } from "../common/Logger";
 import { LazyError } from "../handlers/error";
-
-// Helper type to allow users write better queries.
-type QueryInput = string[] | Record<string, string | number | boolean>;
+import { QueryMapper } from "../handlers/query";
 
 export class LazyTable {
   private databaseId: string;
@@ -74,7 +72,7 @@ export class LazyTable {
    * @throws Error if creation fails due to permissions or validation
    */
 
-  private async prepare() {
+  private async prepare(): Promise<void> {
     const key = `${this.databaseId}:${this.schema.id}`;
 
     // Table already verified to be present.
@@ -91,8 +89,10 @@ export class LazyTable {
         return;
         // Return with nothing if leader still working.
       } catch (error) {
-        // TODO: Add retry if leader failed.
-        throw error;
+        this.logger.warn(
+          `[LazyAppwrite] Leader sync failed for ${this.schema.name}. Retrying as new leader...`
+        );
+        return this.prepare();
       }
     }
 
@@ -118,7 +118,11 @@ export class LazyTable {
 
     // Add the promise to set and await it.
     LazyTable.pendingSyncs.set(key, syncPromise);
-    await syncPromise;
+    try {
+      await syncPromise;
+    } catch (error) {
+      throw error;
+    }
   }
 
   private validateAndClean(data: any, isUpdate = false) {
@@ -230,6 +234,7 @@ export class LazyTable {
         })
       );
     } catch (error: any) {
+      if (error instanceof LazyError) throw error;
       if (error.code === 409) {
         throw LazyError.appwrite(
           `Duplicate Error in '${this.schema.name}': ` +
@@ -256,23 +261,7 @@ export class LazyTable {
    * @returns Promise<Models.RowList<Models.DefaultRow>> - Returns empty list if table doesn't exist.
    */
   async list(queries: QueryInput = [], limit?: number, offset?: number) {
-    let finalQueries: string[] = [];
-
-    // Now we handle the simple object syntax.
-    if (!Array.isArray(queries) && typeof queries === "object") {
-      finalQueries = Object.entries(queries).map(([key, value]) => {
-        return Query.equal(key, value);
-      });
-    }
-
-    // Normal syntax
-    else if (Array.isArray(queries)) {
-      finalQueries = queries;
-    }
-
-    // For pagination
-    if (limit) finalQueries.push(Query.limit(limit));
-    if (offset) finalQueries.push(Query.offset(offset));
+    const finalQueries = QueryMapper.parse(queries, limit, offset);
 
     try {
       return await this.databases.listRows({
@@ -309,11 +298,12 @@ export class LazyTable {
    * @returns Promise<Models.DefaultRow>
    * @throws AppwriteException (404) if ID is not found.
    */
-  async get(id: string) {
+  async get(id: string, queries: QueryInput = []) {
     return this.databases.getRow({
       databaseId: this.databaseId,
       tableId: this.schema.id,
       rowId: id,
+      queries: QueryMapper.parse(queries),
     });
   }
 
@@ -338,6 +328,7 @@ export class LazyTable {
         })
       );
     } catch (error: any) {
+      if (error instanceof LazyError) throw error;
       if (error.code === 404) {
         throw LazyError.appwrite(
           `Not Found: Could not update row '${id}' in '${this.schema.name}' because it does not exist.`

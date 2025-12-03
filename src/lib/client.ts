@@ -84,6 +84,9 @@ export class AppwriteService {
 
       return {
         sessionClient: client,
+        getSessionAccount: (session: string) => {
+          return new Account(client.setSession(session));
+        },
         account: new Account(client), // The core of Session clients
         storage: new Storage(client),
         teams: new Teams(client),

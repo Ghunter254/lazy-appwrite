@@ -35,6 +35,7 @@ export interface AppwriteAdminContext {
 // Session context.
 export interface AppwriteSessionContext {
   sessionClient: Client;
+  getSessionAccount: (session: string) => Account;
   account: Account;
   getDatabase: (databaseId: string, databaseName: string) => LazyDatabase;
   storage: Storage;
