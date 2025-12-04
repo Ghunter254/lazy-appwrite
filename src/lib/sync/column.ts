@@ -31,7 +31,6 @@ export class ColumnManager {
           `Creating Column: [${column.key} (${column.type})] ...`
         );
         await this.createColumn(databaseId, tableId, column);
-        await new Promise((r) => setTimeout(r, 100)); // With a buffer.
         continue;
       }
 
@@ -54,8 +53,8 @@ export class ColumnManager {
             key: column.key,
             size: column.size,
             required: column.required,
-            ...(column._default ? { _default: column._default } : {}),
-            ...(column.array ? { array: column.array } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
+            ...(column.array !== undefined ? { array: column.array } : {}),
           });
 
         case ColumnType.Integer:
@@ -64,10 +63,10 @@ export class ColumnManager {
             tableId: tableId,
             key: column.key,
             required: column.required,
-            ...(column.min ? { min: column.min } : {}),
-            ...(column.max ? { max: column.max } : {}),
-            ...(column._default ? { _default: column._default } : {}),
-            ...(column.array ? { array: column.array } : {}),
+            ...(column.min !== undefined ? { min: column.min } : {}),
+            ...(column.max !== undefined ? { max: column.max } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
+            ...(column.array !== undefined ? { array: column.array } : {}),
           });
         case ColumnType.Float:
           return await this.databases.createFloatColumn({
@@ -75,10 +74,10 @@ export class ColumnManager {
             tableId: tableId,
             key: column.key,
             required: column.required,
-            ...(column.min ? { min: column.min } : {}),
-            ...(column.max ? { max: column.max } : {}),
-            ...(column._default ? { _default: column._default } : {}),
-            ...(column.array ? { array: column.array } : {}),
+            ...(column.min !== undefined ? { min: column.min } : {}),
+            ...(column.max !== undefined ? { max: column.max } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
+            ...(column.array !== undefined ? { array: column.array } : {}),
           });
         case ColumnType.Boolean:
           return await this.databases.createBooleanColumn({
@@ -86,8 +85,8 @@ export class ColumnManager {
             tableId: tableId,
             key: column.key,
             required: column.required,
-            ...(column._default ? { _default: column._default } : {}),
-            ...(column.array ? { array: column.array } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
+            ...(column.array !== undefined ? { array: column.array } : {}),
           });
         case ColumnType.Email:
           return await this.databases.createEmailColumn({
@@ -95,8 +94,8 @@ export class ColumnManager {
             tableId: tableId,
             key: column.key,
             required: column.required,
-            ...(column._default ? { _default: column._default } : {}),
-            ...(column.array ? { array: column.array } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
+            ...(column.array !== undefined ? { array: column.array } : {}),
           });
         case ColumnType.Url:
           return await this.databases.createUrlColumn({
@@ -104,8 +103,8 @@ export class ColumnManager {
             tableId: tableId,
             key: column.key,
             required: column.required,
-            ...(column._default ? { _default: column._default } : {}),
-            ...(column.array ? { array: column.array } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
+            ...(column.array !== undefined ? { array: column.array } : {}),
           });
 
         case ColumnType.Ip:
@@ -114,7 +113,7 @@ export class ColumnManager {
             tableId: tableId,
             key: column.key,
             required: column.required,
-            ...(column._default ? { _default: column._default } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
 
@@ -124,7 +123,7 @@ export class ColumnManager {
             tableId: tableId,
             key: column.key,
             required: column.required,
-            ...(column._default ? { _default: column._default } : {}),
+            ...(column._default !== undefined ? { _default: column._default } : {}),
             ...(column.array ? { array: column.array } : {}),
           });
 
@@ -173,9 +172,9 @@ export class ColumnManager {
             relatedTableId: column.relatedTableId,
             type: column.relationType,
             onDelete: onDeleteToRelation(column.onDelete),
-            ...(column.twoWay ? { twoWay: column.twoWay } : {}),
-            ...(column.key ? { key: column.key } : {}),
-            ...(column.twoWayKey ? { twoWayKey: column.twoWayKey } : {}),
+            ...(column.twoWay !== undefined ? { twoWay: column.twoWay } : {}),
+            ...(column.key !== undefined ? { key: column.key } : {}),
+            ...(column.twoWayKey !== undefined ? { twoWayKey: column.twoWayKey } : {}),
           });
 
         default:
