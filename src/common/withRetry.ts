@@ -21,8 +21,8 @@ export async function withRetry<T>(
 
     // We check the code
     const code = error.code || error.response?.code;
-    // Retry on 429 or 5xx.
-    const isRetryable = code === 429 || !code;
+    const errorCodes = [429, 501, 502, 503]; // Error limits
+    const isRetryable = errorCodes.includes(code) || !code;
     if (!isRetryable) throw error;
 
     await new Promise((res) => setTimeout(res, delay));
