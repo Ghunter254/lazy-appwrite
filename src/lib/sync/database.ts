@@ -1,5 +1,6 @@
 import { TablesDB, Query } from "node-appwrite";
 import { Logger } from "../../common/Logger";
+import { withRetry } from "../../common/withRetry";
 import { LazyError } from "../../handlers/error";
 
 export class DatabaseManager {
@@ -21,13 +22,13 @@ export class DatabaseManager {
     if (this.verifiedDatabases.has(databaseId)) return;
 
     try {
-      // 3. Check existence
-      await this.databases.get({ databaseId });
+      // 3. Check existence (use retry to avoid treating transient errors as missing)
+      await withRetry(() => this.databases.get({ databaseId }));
       this.verifiedDatabases.add(databaseId);
     } catch (error: any) {
       if (error.code === 404) {
         // 4. Not Found -> Create
-        this.logger.info(`Database [${databaseId}] not found. Creating...`);
+        // this.logger.info(`Database [${databaseId}] not found. Creating...`); - Might leak database ID when unintended
         try {
           await this.databases.create({
             databaseId: databaseId,

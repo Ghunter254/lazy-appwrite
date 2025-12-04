@@ -95,10 +95,13 @@ export class AuthUtilities {
 
   async loginOrRegister(email: string, password: string, name?: string) {
     try {
-      return await this.account.createEmailPasswordSession({
-        email: email,
-        password: password,
-      });
+      // Try login with retry semantics for transient failures.
+      return await withRetry(() =>
+        this.account.createEmailPasswordSession({
+          email: email,
+          password: password,
+        })
+      );
     } catch (loginError: any) {
       this.logger.info("[Auth] Login failed, attempting registration...");
       try {
@@ -110,7 +113,10 @@ export class AuthUtilities {
           })
         );
       } catch (regError: any) {
-        if (regError.originalError?.code === 409) {
+        const regCode =
+          regError.code ?? regError.originalError?.code ?? regError.response?.status ?? regError.status;
+        // If registration failed because the user already exists, surface invalid password using the original login error as the cause.
+        if (Number(regCode) === 409) {
           throw LazyError.appwrite("Invalid Password", loginError);
         }
         throw LazyError.abort("Failed to create or login user", regError);

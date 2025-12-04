@@ -21,13 +21,10 @@ export async function withRetry<T>(
 
     // We check the code
     const code = error.code || error.response?.code;
-    // Retry on 429 or 5xx.
-    const isRetryable = code === 429 || (code >= 500 && code < 600) || !code;
+    const errorCodes = [429, 501, 502, 503]; // Error limits
+    const isRetryable = errorCodes.includes(code) || !code;
     if (!isRetryable) throw error;
 
-    console.warn(
-      `[LazyAppwrite] Rate Limited/Server Error (${code}). Retrying in ${delay}ms...`
-    );
     await new Promise((res) => setTimeout(res, delay));
 
     // Retry with double delay (Exponential: 500ms -> 1000ms -> 2000ms)
