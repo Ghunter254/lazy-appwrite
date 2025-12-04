@@ -36,6 +36,7 @@ export class AppwriteService {
     try {
       const verbose = config.verbose === true;
       const logger = new Logger(verbose);
+      const disableSync = config.disableSync === true;
       const client = new Client()
         .setEndpoint(config.endpoint || "https://cloud.appwrite.io/v1")
         .setProject(config.projectId)
@@ -48,7 +49,13 @@ export class AppwriteService {
       return {
         client,
         getDatabase: (databaseId: string, databaseName: string) =>
-          new LazyDatabase(client, databaseId, databaseName, logger),
+          new LazyDatabase(
+            client,
+            databaseId,
+            databaseName,
+            logger,
+            disableSync
+          ),
         users: new Users(client),
         storage: new Storage(client),
         teams: new Teams(client),
@@ -81,6 +88,7 @@ export class AppwriteService {
       }
       const verbose = config.verbose === true;
       const logger = new Logger(verbose);
+      const disableSync = config.disableSync === true;
 
       return {
         sessionClient: client,
@@ -93,7 +101,13 @@ export class AppwriteService {
         functions: new Functions(client),
         avatars: new Avatars(client),
         getDatabase: (databaseId: string, databaseName: string) =>
-          new LazyDatabase(client, databaseId, databaseName, logger),
+          new LazyDatabase(
+            client,
+            databaseId,
+            databaseName,
+            logger,
+            disableSync
+          ),
       };
     } catch (error: any) {
       throw LazyError.config(

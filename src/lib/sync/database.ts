@@ -57,7 +57,7 @@ export class DatabaseManager {
   private async verifyConnection() {
     if (DatabaseManager.isConnectionVerified) return;
 
-    this.logger.info("📡 Verifying Appwrite Connection...");
+    this.logger.info("Verifying Appwrite Connection...");
 
     try {
       // Run a lightweight operation (List max 1 database)

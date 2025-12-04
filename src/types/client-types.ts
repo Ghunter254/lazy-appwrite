@@ -18,6 +18,7 @@ export interface AppwriteConfig {
   apiKey?: string;
   selfSigned?: boolean;
   verbose?: boolean;
+  disableSync?: boolean;
 }
 
 // Admin context.

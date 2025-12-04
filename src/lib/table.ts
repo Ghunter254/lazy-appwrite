@@ -13,6 +13,8 @@ export class LazyTable {
   private databases: TablesDB;
   private syncer: LazySync;
   private logger: Logger;
+  private disableSync: boolean;
+  private hasLoggedDisable: boolean = false;
 
   // A state to track which tables have been verified for current lifecycle.
   private static verifiedTables: Set<string> = new Set();
@@ -35,7 +37,8 @@ export class LazyTable {
     databaseId: string,
     databaseName: string,
     schema: TableSchema,
-    logger: Logger
+    logger: Logger,
+    disableSync: boolean = false
   ) {
     this.databaseId = databaseId;
     this.databaseName = databaseName;
@@ -43,6 +46,7 @@ export class LazyTable {
     this.syncer = syncer;
     this.schema = schema;
     this.logger = logger;
+    this.disableSync = disableSync;
   }
 
   /**
@@ -73,6 +77,17 @@ export class LazyTable {
    */
 
   private async prepare(): Promise<void> {
+    if (this.disableSync) {
+      // Log only once per table instance to avoid spam
+      if (!this.hasLoggedDisable) {
+        this.logger.info(
+          `Sync disabled for [${this.schema.name}]. Skipping checks.`
+        );
+        this.hasLoggedDisable = true;
+      }
+      return;
+    }
+
     const key = `${this.databaseId}:${this.schema.id}`;
 
     // Table already verified to be present.

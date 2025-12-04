@@ -76,9 +76,7 @@ export class TableManager {
     const remotePerms = (remote.$permissions || []).sort().join(",");
 
     if (localPerms !== remotePerms) {
-      this.logger.info(
-        `🔐 Permissions changed for [${local.name}]. Updating...`
-      );
+      this.logger.info(`Permissions changed for [${local.name}]. Updating...`);
       needsUpdate = true;
     }
 
@@ -89,7 +87,7 @@ export class TableManager {
 
     if (localSec !== remoteSec) {
       this.logger.info(
-        `🛡️ row Security changed for [${local.name}]: ${localSec}. Updating...`
+        `row Security changed for [${local.name}]: ${localSec}. Updating...`
       );
       needsUpdate = true;
     }
@@ -98,7 +96,7 @@ export class TableManager {
     // Only check if explicitly defined in schema (undefined means "leave as is")
     if (local.enabled !== undefined && local.enabled !== remote.enabled) {
       this.logger.info(
-        `⚡ Enabled status changed for [${local.name}]: ${local.enabled}. Updating...`
+        `Enabled status changed for [${local.name}]: ${local.enabled}. Updating...`
       );
       needsUpdate = true;
     }

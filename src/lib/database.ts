@@ -10,18 +10,21 @@ export class LazyDatabase {
   private dbId: string;
   private dbName: string;
   private logger: Logger;
+  private disableSync: boolean;
 
   constructor(
     client: Client,
     databaseId: string,
     databaseName: string,
-    logger: Logger
+    logger: Logger,
+    disableSync: boolean = false
   ) {
     this.databases = new TablesDB(client);
     this.dbId = databaseId;
     this.dbName = databaseName;
     this.logger = logger;
     this.syncer = new LazySync(client, logger);
+    this.disableSync = disableSync;
   }
 
   /**
@@ -45,7 +48,8 @@ export class LazyDatabase {
       this.dbId,
       this.dbName,
       schema,
-      this.logger
+      this.logger,
+      this.disableSync
     );
   }
 }
