@@ -114,7 +114,10 @@ export class AuthUtilities {
         );
       } catch (regError: any) {
         const regCode =
-          regError.code ?? regError.originalError?.code ?? regError.response?.status ?? regError.status;
+          regError.code ??
+          regError.originalError?.code ??
+          regError.response?.status ??
+          regError.status;
         // If registration failed because the user already exists, surface invalid password using the original login error as the cause.
         if (Number(regCode) === 409) {
           throw LazyError.appwrite("Invalid Password", loginError);
