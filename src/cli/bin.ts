@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { init } from "./commands/init";
+import { pull } from "./commands/pull";
 
 const program = new Command();
 
@@ -13,5 +14,10 @@ program
   .command("init")
   .description("Initialize Lazy Appwrite in your project")
   .action(init);
+
+program
+  .command("pull")
+  .description("Pull the current database schema from Appwrite")
+  .action(pull);
 
 program.parse(process.argv);
