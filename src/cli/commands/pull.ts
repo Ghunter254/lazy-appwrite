@@ -88,6 +88,13 @@ export async function pull() {
         message: "Enter the output path for the schema file:",
         default: "src/lib/schemas.ts",
       },
+      {
+        type: "input",
+        name: "dbImportPath",
+        message: "Relative path to your initialized 'db' instance?",
+        default: "./appwrite",
+        suffix: " (e.g. '../lib/appwrite')",
+      },
     ]);
 
     console.log(
@@ -102,6 +109,7 @@ export async function pull() {
 
     // Generating schema file content
     let fileContent = `import { TableSchema, ColumnType, IndexType, RelationshipType, onDelete } from "lazy-appwrite";\n\n`;
+    fileContent += `import { db } from "${answers.dbImportPath}";\n\n`;
 
     for (const table of tables) {
       fileContent += await generateSchemaCode(
@@ -161,8 +169,11 @@ async function generateSchemaCode(
     }),
   ]);
 
-  const varName = sanitizeName(table.name) + "Schema";
-  let code = `export const ${varName}: TableSchema = {\n`;
+  const rawName = sanitizeName(table.name);
+  const varName = `${rawName}TableSchema`;
+  const modelName = rawName;
+
+  let code = `const ${varName}: TableSchema = {\n`;
   code += `  id: "${table.$id}",\n`;
   code += `  name: "${table.name}",\n`;
 
@@ -187,6 +198,8 @@ async function generateSchemaCode(
   }
 
   code += `};\n`;
+
+  code += `export const ${modelName} = db.model(${varName});\n`;
   return code;
 }
 
@@ -196,13 +209,14 @@ function sanitizeName(name: string) {
 }
 
 function mapIndex(idx: any): string {
+  console.log("Mapping index:", idx);
   let type = "IndexType.Key";
   if (idx.type === "unique") type = "IndexType.Unique";
   if (idx.type === "fulltext") type = "IndexType.Fulltext";
   if (idx.type === "spatial") type = "IndexType.Spatial"; // Should verify Appwrite return string
 
   return `    { key: "${idx.key}", type: ${type}, columns: ${JSON.stringify(
-    idx.colibutes
+    idx.columns
   )} },\n`;
 }
 
